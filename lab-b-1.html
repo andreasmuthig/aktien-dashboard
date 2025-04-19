@@ -58,10 +58,6 @@
       box-shadow: 0 4px 8px rgba(0,0,0,0.2);
       position: relative;
     }
-    .asset-tile h2 {
-      margin-top: 0;
-      text-align: center;
-    }
     .recommendation {
       font-weight: bold;
       padding: 5px;
@@ -91,16 +87,16 @@
       background-color: #666;
     }
     @keyframes pulseIcon {
-    0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.15); opacity: 0.7; }
-    100% { transform: scale(1); opacity: 1; }
-  }
-  .alarm i.feather,
-  .stopp i.feather {
-    animation: pulseIcon 1.2s infinite;
-  }
-</style>
-  <script defer src="https://unpkg.com/feather-icons"></script>
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.15); opacity: 0.7; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .alarm i.feather,
+    .stopp i.feather {
+      animation: pulseIcon 1.2s infinite;
+    }
+  </style>
+  <script src="https://unpkg.com/feather-icons"></script>
 </head>
 <body>
   <nav id="navMenu">
@@ -113,10 +109,13 @@
   <div class="asset-grid" id="aktienGrid"></div>
 
   <script>
-    
     const globaleGrenze = 15.00;
     const gespeicherteDaten = localStorage.getItem("portfolio");
-    let portfolio = gespeicherteDaten ? JSON.parse(gespeicherteDaten) : [];
+    let portfolio = gespeicherteDaten ? JSON.parse(gespeicherteDaten) : [
+      { symbol: "AAPL", kauf: 130, aktuell: 140, ziel: 150, stop: 120 },
+      { symbol: "MSFT", kauf: 250, aktuell: 255, ziel: 270, stop: 230 },
+      { symbol: "TSLA", kauf: 700, aktuell: 710, ziel: 750, stop: 660 }
+    ];
     const grid = document.getElementById("aktienGrid");
 
     function getEmpfehlung(aktie) {
@@ -128,7 +127,6 @@
       if (diff < 0) return { text: '<i data-feather="alert-circle"></i> Halten', klasse: 'red' };
       return { text: '<i data-feather="clock"></i> Halten', klasse: 'neutral' };
     }
-    }
 
     function renderGrid() {
       grid.innerHTML = "";
@@ -138,7 +136,6 @@
         const tile = document.createElement("div");
         tile.className = "asset-tile";
         tile.innerHTML = `
-          <h2>${aktie.symbol}</h2>
           <div>Kaufkurs: <strong>${aktie.kauf.toFixed(2)} $</strong></div>
           <div>Aktuell: <strong>${aktie.aktuell.toFixed(2)} $</strong></div>
           <div>Ziel: ${aktie.ziel.toFixed(2)} $</div>
@@ -149,6 +146,7 @@
         `;
         grid.appendChild(tile);
       });
+      
     }
 
     function editAktie(index) {
@@ -166,14 +164,16 @@
           };
           localStorage.setItem("portfolio", JSON.stringify(portfolio));
           renderGrid();
-    feather.replace();
         } else {
           alert("Bitte genau 4 Werte eingeben, getrennt durch Kommas.");
         }
       }
     }
 
-    renderGrid();
+    window.onload = () => {
+  renderGrid();
+  if (window.feather) window.feather.replace();
+};
   </script>
 </body>
 </html>
