@@ -97,29 +97,6 @@
         }
     </style>
     <script src="https://unpkg.com/feather-icons"></script>
-    <script>
-        function neueAktieAnlegen() {
-            const eingabe = prompt("Neue Aktie anlegen im Format: Symbol, Kauf, Aktuell, Ziel, Stop", "NFLX,350,360,380,330");
-            if (eingabe) {
-                const teile = eingabe.split(",");
-                if (teile.length === 5) {
-                    const neue = {
-                        symbol: teile[0].trim().toUpperCase(),
-                        kauf: parseFloat(teile[1]),
-                        aktuell: parseFloat(teile[2]),
-                        ziel: parseFloat(teile[3]),
-                        stop: parseFloat(teile[4])
-                    };
-                    portfolio.push(neue);
-                    localStorage.setItem("portfolio", JSON.stringify(portfolio));
-                    renderGrid();
-                    if (window.feather) window.feather.replace();
-                } else {
-                    alert("Bitte genau 5 Werte eingeben, getrennt durch Kommas.");
-                }
-            }
-        }
-    </script>
 </head>
 <body>
     <nav id="navMenu">
@@ -131,8 +108,7 @@
 
     <button class="edit-button" onclick="neueAktieAnlegen()" style="margin-bottom: 20px;"><i data-feather='plus-circle'></i> Neue Aktie</button>
 
-    <div class="asset-grid" id="aktienGrid">
-        </div>
+    <div class="asset-grid" id="aktienGrid"></div>
 
     <script>
         const globaleGrenze = 15.00;
@@ -192,6 +168,28 @@
                     renderGrid();
                 } else {
                     alert("Bitte genau 4 Werte eingeben, getrennt durch Kommas.");
+                }
+            }
+        }
+
+        function neueAktieAnlegen() {
+            const eingabe = prompt("Neue Aktie anlegen im Format: Symbol, Kauf, Aktuell, Ziel, Stop", "NFLX,350,360,380,330");
+            if (eingabe) {
+                const teile = eingabe.split(",");
+                if (teile.length === 5) {
+                    const neue = {
+                        symbol: teile[0].trim().toUpperCase(),
+                        kauf: parseFloat(teile[1]),
+                        aktuell: parseFloat(teile[2]),
+                        ziel: parseFloat(teile[3]),
+                        stop: parseFloat(teile[4])
+                    };
+                    portfolio.push(neue);
+                    localStorage.setItem("portfolio", JSON.stringify(portfolio));
+                    renderGrid();
+                    if (window.feather) window.feather.replace();
+                } else {
+                    alert("Bitte genau 5 Werte eingeben, getrennt durch Kommas.");
                 }
             }
         }
