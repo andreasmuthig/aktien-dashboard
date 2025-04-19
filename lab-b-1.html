@@ -96,7 +96,30 @@
       animation: pulseIcon 1.2s infinite;
     }
   </style>
-  <script src="https://unpkg.com/feather-icons"></script>
+  <script src="https://unpkg.com/feather-icons">
+    function neueAktieAnlegen() {
+      const eingabe = prompt("Neue Aktie anlegen im Format: Symbol, Kauf, Aktuell, Ziel, Stop", "NFLX,350,360,380,330");
+      if (eingabe) {
+        const teile = eingabe.split(",");
+        if (teile.length === 5) {
+          const neue = {
+            symbol: teile[0].trim().toUpperCase(),
+            kauf: parseFloat(teile[1]),
+            aktuell: parseFloat(teile[2]),
+            ziel: parseFloat(teile[3]),
+            stop: parseFloat(teile[4])
+          };
+          portfolio.push(neue);
+          localStorage.setItem("portfolio", JSON.stringify(portfolio));
+          renderGrid();
+          if (window.feather) window.feather.replace();
+        } else {
+          alert("Bitte genau 5 Werte eingeben, getrennt durch Kommas.");
+        }
+      }
+    }
+
+$1
 </head>
 <body>
   <nav id="navMenu">
@@ -106,7 +129,9 @@
     <div class="menu-item"><a href="settings.html"><i data-feather="settings"></i> Einstellungen</a></div>
   </nav>
 
-  <div class="asset-grid" id="aktienGrid"></div>
+  <button class="edit-button" onclick="neueAktieAnlegen()" style="margin-bottom: 20px;"><i data-feather='plus-circle'></i> Neue Aktie</button>
+
+$1
 
   <script>
     const globaleGrenze = 15.00;
@@ -141,7 +166,7 @@
           <div>Ziel: ${aktie.ziel.toFixed(2)} $</div>
           <div>Stop: ${aktie.stop.toFixed(2)} $</div>
           <div>Performance: <strong>${diff.toFixed(2)} %</strong></div>
-          <div class="recommendation ${empfehlung.klasse}">${empfehlung.text}</div>
+          <div class="recommendation \${empfehlung.klasse}" title="Klicke auf 'Bearbeiten' für mehr Kontrolle"${empfehlung.text}</div>
           <button class="edit-button" onclick="editAktie(${index})"><i data-feather='edit-2'></i> Bearbeiten</button>
         `;
         grid.appendChild(tile);
