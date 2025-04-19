@@ -96,20 +96,7 @@
             animation: pulseIcon 1.2s infinite;
         }
     </style>
-    <script src="https://unpkg.com/feather-icons">
-function loescheName(symbol) {
-    if (confirm(`Möchtest du den Namen für ${symbol} wirklich entfernen?`)) {
-        delete nameMap[symbol];
-localStorage.setItem("nameMap", JSON.stringify(nameMap));
-renderNameList();
-    }
-}
-
-function verwalteNamen() {
-    alert("Du kannst einzelne Namen direkt mit dem X neben dem Eintrag entfernen.");
-}
-
-$1
+    <script src="https://unpkg.com/feather-icons"></script>
 </head>
 <body>
     <nav id="navMenu">
@@ -121,50 +108,40 @@ $1
 
     <button class="edit-button" onclick="neueAktieAnlegen()" style="margin-top: 90px; margin-bottom: 20px;"><i data-feather='plus-circle'></i> Neue Aktie</button>
 
-    <div class="asset-grid" id="aktienGrid"><div style="margin-top: 40px;">
-  $1 $1 <button onclick="importiereDaten()" class='edit-button'><i data-feather='upload'></i> Importieren</button>
-  <ul id="nameList"></ul>
-</div>
+    <div class="asset-grid" id="aktienGrid"></div>
 
-$1
+    <div style="margin-top: 40px;">
+        <h2>Gespeicherte Namen
+            <button onclick="verwalteNamen()" class='edit-button'><i data-feather='trash-2'></i> Verwalten</button>
+            <button onclick="exportiereDaten()" class='edit-button'><i data-feather='download'></i> Exportieren</button>
+            <button onclick="importiereDaten()" class='edit-button'><i data-feather='upload'></i> Importieren</button>
+        </h2>
+        <ul id="nameList"></ul>
+    </div>
+
+    <script>
         const globaleGrenze = 15.00;
         const gespeicherteNamen = localStorage.getItem("nameMap");
-const gespeicherteDaten = localStorage.getItem("portfolio");
+        const gespeicherteDaten = localStorage.getItem("portfolio");
+
         let nameMap = gespeicherteNamen ? JSON.parse(gespeicherteNamen) : {
-    AAPL: "Apple Inc.",
-    MSFT: "Microsoft Corporation",
-    TSLA: "Tesla Inc.",
-    NFLX: "Netflix Inc.",
-    AMZN: "Amazon.com Inc.",
-    META: "Meta Platforms Inc."
-};
+            AAPL: "Apple Inc.",
+            MSFT: "Microsoft Corporation",
+            TSLA: "Tesla Inc.",
+            NFLX: "Netflix Inc.",
+            AMZN: "Amazon.com Inc.",
+            META: "Meta Platforms Inc."
+        };
 
-let portfolio = gespeicherteDaten ? JSON.parse(gespeicherteDaten) : [
-    { symbol: "AAPL", kauf: 130, aktuell: 140, ziel: 150, stop: 120 },
-    { symbol: "MSFT", kauf: 250, aktuell: 255, ziel: 270, stop: 230 },
-    { symbol: "TSLA", kauf: 700, aktuell: 710, ziel: 750, stop: 660 }
-];
-        $1
+        let portfolio = gespeicherteDaten ? JSON.parse(gespeicherteDaten) : [
+            { symbol: "AAPL", kauf: 130, aktuell: 140, ziel: 150, stop: 120 },
+            { symbol: "MSFT", kauf: 250, aktuell: 255, ziel: 270, stop: 230 },
+            { symbol: "TSLA", kauf: 700, aktuell: 710, ziel: 750, stop: 660 }
+        ];
 
-function renderNameList() {
-    const list = document.getElementById("nameList");
-    if (!list) return;
-    list.innerHTML = "";
-    Object.entries(nameMap).forEach(([symbol, name]) => {
-        const li = document.createElement("li");
-        li.innerHTML = `${symbol} – ${name} <button onclick="loescheName('${symbol}')" class='edit-button'><i data-feather='x'></i></button>`;
-        list.appendChild(li);
-    });
-} – ${name}`;
-        list.appendChild(li);
-    });
-};
-
-function getName(symbol) {
-    return nameMap[symbol] || "Unbekannt";
-}
-
-$1
+        function getName(symbol) {
+            return nameMap[symbol] || "Unbekannt";
+        }
 
         function getEmpfehlung(aktie) {
             const diff = ((aktie.aktuell - aktie.kauf) / aktie.kauf) * 100;
@@ -177,6 +154,7 @@ $1
         }
 
         function renderGrid() {
+            const grid = document.getElementById("aktienGrid");
             grid.innerHTML = "";
             portfolio.forEach((aktie, index) => {
                 const diff = ((aktie.aktuell - aktie.kauf) / aktie.kauf) * 100;
@@ -184,8 +162,8 @@ $1
                 const tile = document.createElement("div");
                 tile.className = "asset-tile";
                 tile.innerHTML = `
-<h3>${aktie.symbol} – ${getName(aktie.symbol)}</h3>
-$1<div>Kaufkurs: <strong>${aktie.kauf.toFixed(2)} $</strong></div>
+                    <h3>${aktie.symbol} – ${getName(aktie.symbol)}</h3>
+                    <div>Kaufkurs: <strong>${aktie.kauf.toFixed(2)} $</strong></div>
                     <div>Aktuell: <strong>${aktie.aktuell.toFixed(2)} $</strong></div>
                     <div>Ziel: ${aktie.ziel.toFixed(2)} $</div>
                     <div>Stop: ${aktie.stop.toFixed(2)} $</div>
@@ -196,6 +174,17 @@ $1<div>Kaufkurs: <strong>${aktie.kauf.toFixed(2)} $</strong></div>
                 grid.appendChild(tile);
             });
             if (window.feather) window.feather.replace();
+        }
+
+        function renderNameList() {
+            const list = document.getElementById("nameList");
+            if (!list) return;
+            list.innerHTML = "";
+            Object.entries(nameMap).forEach(([symbol, name]) => {
+                const li = document.createElement("li");
+                li.innerHTML = `${symbol} – ${name} <button onclick="loescheName('${symbol}')" class='edit-button'><i data-feather='x'></i></button>`;
+                list.appendChild(li);
+            });
         }
 
         function editAktie(index) {
@@ -220,82 +209,100 @@ $1<div>Kaufkurs: <strong>${aktie.kauf.toFixed(2)} $</strong></div>
         }
 
         function neueAktieAnlegen() {
-    const eingabe = prompt("Neue Aktie anlegen im Format: Symbol, Name, Kauf, Aktuell, Ziel, Stop", "NFLX,Netflix Inc.,350,360,380,330");
-    if (eingabe) {
-        const teile = eingabe.split(",");
-        if (teile.length === 6) {
-            const symbol = teile[0].trim().toUpperCase();
-            const name = teile[1].trim();
-            const neue = {
-                symbol: symbol,
-                kauf: parseFloat(teile[2]),
-                aktuell: parseFloat(teile[3]),
-                ziel: parseFloat(teile[4]),
-                stop: parseFloat(teile[5])
-            };
-            portfolio.push(neue);
-            nameMap[symbol] = name;
-localStorage.setItem("nameMap", JSON.stringify(nameMap));
-            localStorage.setItem("portfolio", JSON.stringify(portfolio));
-            renderGrid();
-            if (window.feather) window.feather.replace();
-        } else {
-            alert("Bitte genau 6 Werte eingeben: Symbol, Name, Kauf, Aktuell, Ziel, Stop.");
-        }
-    }
-};
+            const eingabe = prompt("Neue Aktie anlegen im Format: Symbol, Name, Kauf, Aktuell, Ziel, Stop", "NFLX,Netflix Inc.,350,360,380,330");
+            if (eingabe) {
+                const teile = eingabe.split(",");
+                if (teile.length === 6) {
+                    const symbol = teile[0].trim().toUpperCase();
+                    const name = teile[1].trim();
+                    const neue = {
+                        symbol: symbol,
+                        kauf: parseFloat(teile[2]),
+                        aktuell: parseFloat(teile[3]),
+                        ziel: parseFloat(teile[4]),
+                        stop: parseFloat(teile[5])
+                    };
                     portfolio.push(neue);
+                    nameMap[symbol] = name;
+                    localStorage.setItem("nameMap", JSON.stringify(nameMap));
                     localStorage.setItem("portfolio", JSON.stringify(portfolio));
                     renderGrid();
+                    renderNameList();
                     if (window.feather) window.feather.replace();
+                    alert("✅ Aktie hinzugefügt!");
                 } else {
-                    alert("Bitte genau 5 Werte eingeben, getrennt durch Kommas.");
+                    alert("Bitte genau 6 Werte eingeben: Symbol, Name, Kauf, Aktuell, Ziel, Stop.");
                 }
             }
         }
 
+        function loescheName(symbol) {
+            if (confirm(`Möchtest du den Namen für ${symbol} wirklich entfernen?`)) {
+                delete nameMap[symbol];
+                localStorage.setItem("nameMap", JSON.stringify(nameMap));
+                renderNameList();
+            }
+        }
+
+        function verwalteNamen() {
+            alert("Du kannst einzelne Namen direkt mit dem X neben dem Eintrag entfernen.");
+        }
+
+        function exportiereDaten() {
+            const daten = {
+                portfolio: portfolio,
+                namen: nameMap
+            };
+            const blob = new Blob([JSON.stringify(daten, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'aktien_export.json';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            alert("✅ Export erfolgreich durchgeführt!");
+        }
+
+        function importiereDaten() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'application/json';
+            input.onchange = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const daten = JSON.parse(e.target.result);
+                        if (daten.portfolio && Array.isArray(daten.portfolio)) {
+                            portfolio = daten.portfolio;
+                            localStorage.setItem("portfolio", JSON.stringify(portfolio));
+                        }
+                        if (daten.namen && typeof daten.namen === 'object') {
+                            nameMap = daten.namen;
+                            localStorage.setItem("nameMap", JSON.stringify(nameMap));
+                        }
+                        renderGrid();
+                        renderNameList();
+                        if (window.feather) window.feather.replace();
+                        alert("✅ Import erfolgreich geladen!");
+                    } catch (err) {
+                        alert("Fehler beim Importieren der Datei.");
+                        console.error(err);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
         window.onload = () => {
-    renderNameList();
-        renderGrid();
-        alert("✅ Import erfolgreich geladen!");
+            renderGrid();
+            renderNameList();
             if (window.feather) window.feather.replace();
         };
-    
-$1
-$1
-function exportiereDaten() {
-  const daten = {
-    portfolio: portfolio,
-    namen: nameMap
-  };
-  const blob = new Blob([JSON.stringify(daten, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'aktien_export.json';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-  alert("✅ Export erfolgreich durchgeführt!");
-}
-        if (daten.namen && typeof daten.namen === 'object') {
-          nameMap = daten.namen;
-          localStorage.setItem("nameMap", JSON.stringify(nameMap));
-        }
-        renderGrid();
-        renderNameList();
-        if (window.feather) window.feather.replace();
-      } catch (err) {
-        alert("Fehler beim Importieren der Datei.");
-        console.error(err);
-      }
-    };
-    reader.readAsText(file);
-  };
-  input.click();
-}
-
-$1
+    </script>
 </body>
 </html>
