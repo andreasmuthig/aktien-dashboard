@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mein Aktien-Portfolio</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: #ffffff;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid #444;
+    }
+    th {
+      background-color: #1e1e1e;
+    }
+    .green {
+      color: #00ff7f;
+    }
+    .red {
+      color: #ff4d4d;
+    }
+    .yellow {
+      color: #ffd700;
+    }
+  </style>
+</head>
+<body>
+  <h1>📈 Mein Aktien-Portfolio</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Symbol</th>
+        <th>Kaufkurs ($)</th>
+        <th>Aktueller Kurs ($)</th>
+        <th>Gewinn/Verlust</th>
+        <th>Empfehlung</th>
+      </tr>
+    </thead>
+    <tbody id="portfolio-body">
+      <!-- Dynamisch befüllt -->
+    </tbody>
+  </table>
+
+  <script>
+    const portfolio = [
+      { symbol: 'PLTR', kauf: 18.50, aktuell: 24.10 },
+      { symbol: 'AMD', kauf: 160.00, aktuell: 155.00 },
+      { symbol: 'META', kauf: 440.00, aktuell: 472.00 }
+    ];
+
+    const tbody = document.getElementById("portfolio-body");
+
+    portfolio.forEach(aktie => {
+      const diff = ((aktie.aktuell - aktie.kauf) / aktie.kauf) * 100;
+      let klasse = '', empfehlung = '';
+
+      if (diff >= 25) {
+        klasse = 'green';
+        empfehlung = '✅ Verkaufen';
+      } else if (diff >= 5) {
+        klasse = 'yellow';
+        empfehlung = '🔍 Beobachten';
+      } else if (diff < 0) {
+        klasse = 'red';
+        empfehlung = '⚠ Halten';
+      } else {
+        empfehlung = '⏳ Halten';
+      }
+
+      const row = `<tr>
+        <td>${aktie.symbol}</td>
+        <td>${aktie.kauf.toFixed(2)}</td>
+        <td>${aktie.aktuell.toFixed(2)}</td>
+        <td class="${klasse}">${diff.toFixed(2)}%</td>
+        <td>${empfehlung}</td>
+      </tr>`;
+      tbody.innerHTML += row;
+    });
+  </script>
+</body>
+</html>
