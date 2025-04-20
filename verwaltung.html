@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aktien Verwaltung</title>
+  <title>Verwaltung</title>
   <script src="https://unpkg.com/feather-icons"></script>
   <style>
     body {
@@ -12,9 +12,6 @@
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 20px;
-    }
-    h1 {
-      margin-top: 100px;
     }
     #navMenu {
       position: fixed;
@@ -49,8 +46,17 @@
     #navMenu .menu-item:hover a {
       text-shadow: 0 0 5px #666;
     }
+    .menu-item a.active {
+      background-color: #2e7d32;
+      color: #ffffff !important;
+      font-weight: bold;
+      box-shadow: 0 0 10px #2e7d32;
+    }
+    .content {
+      margin-top: 100px;
+    }
     .edit-button {
-      margin: 5px;
+      margin: 5px 0;
       padding: 5px 10px;
       background-color: #444;
       color: white;
@@ -63,29 +69,25 @@
       padding: 0;
     }
     li {
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
-  .menu-item a.active {
-  background-color: #2e7d32;
-  color: #ffffff !important;
-  font-weight: bold;
-  box-shadow: 0 0 10px #2e7d32;
-}
+  </style>
 </head>
 <body>
   <nav id="navMenu">
     <div class="menu-item"><a href="index.html"><i data-feather="home"></i> Home</a></div>
-    <div class="menu-item"><a href="verwaltung.html"><i data-feather="folder"></i> Verwaltung</a></div>
+    <div class="menu-item"><a href="verwaltung.html" class="active"><i data-feather="folder"></i> Verwaltung</a></div>
   </nav>
 
-  <h1>Verwaltung</h1>
+  <div class="content">
+    <h2>Aktien-Verwaltung</h2>
+    <button class="edit-button" onclick="neueAktieAnlegen()"><i data-feather="plus-circle"></i> Neue Aktie</button>
+    <button class="edit-button" onclick="exportiereDaten()"><i data-feather="download"></i> Exportieren</button>
+    <button class="edit-button" onclick="importiereDaten()"><i data-feather="upload"></i> Importieren</button>
 
-  <button onclick="neueAktieAnlegen()" class="edit-button"><i data-feather="plus-circle"></i> Neue Aktie</button>
-  <button onclick="exportiereDaten()" class="edit-button"><i data-feather="download"></i> Exportieren</button>
-  <button onclick="importiereDaten()" class="edit-button"><i data-feather="upload"></i> Importieren</button>
-
-  <h2>Gespeicherte Namen</h2>
-  <ul id="nameList"></ul>
+    <h3>Gespeicherte Namen:</h3>
+    <ul id="nameList"></ul>
+  </div>
 
   <script>
     let nameMap = JSON.parse(localStorage.getItem("nameMap") || "{}");
@@ -96,7 +98,7 @@
       list.innerHTML = "";
       Object.entries(nameMap).forEach(([symbol, name]) => {
         const li = document.createElement("li");
-        li.innerHTML = `${symbol} – ${name} <button onclick="loescheName('${symbol}')" class='edit-button'><i data-feather='x'></i></button>`;
+        li.innerHTML = `${symbol} – ${name} <button class='edit-button' onclick="loescheName('${symbol}')"><i data-feather='x'></i></button>`;
         list.appendChild(li);
       });
       feather.replace();
@@ -111,7 +113,7 @@
     }
 
     function neueAktieAnlegen() {
-      const eingabe = prompt("Neue Aktie anlegen im Format: Symbol, Name, Kauf, Aktuell, Ziel, Stop", "NFLX,Netflix Inc.,350,360,380,330");
+      const eingabe = prompt("Neue Aktie im Format: Symbol, Name, Kauf, Aktuell, Ziel, Stop", "NFLX,Netflix Inc.,350,360,380,330");
       if (!eingabe) return;
       const teile = eingabe.split(",");
       if (teile.length !== 6) return alert("Bitte genau 6 Werte eingeben.");
@@ -129,7 +131,6 @@
       localStorage.setItem("nameMap", JSON.stringify(nameMap));
       localStorage.setItem("portfolio", JSON.stringify(portfolio));
       renderNameList();
-      alert("✅ Aktie hinzugefügt!");
     }
 
     function exportiereDaten() {
@@ -143,7 +144,6 @@
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      alert("✅ Export erfolgreich durchgeführt!");
     }
 
     function importiereDaten() {
@@ -162,7 +162,6 @@
             localStorage.setItem("portfolio", JSON.stringify(portfolio));
             localStorage.setItem("nameMap", JSON.stringify(nameMap));
             renderNameList();
-            alert("✅ Import erfolgreich geladen!");
           } catch (err) {
             alert("Fehler beim Importieren.");
           }
@@ -172,7 +171,10 @@
       input.click();
     }
 
-    window.onload = () => renderNameList();
+    window.onload = () => {
+      feather.replace();
+      renderNameList();
+    }
   </script>
 </body>
 </html>
