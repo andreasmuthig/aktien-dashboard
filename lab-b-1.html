@@ -46,85 +46,81 @@
     #navMenu .menu-item:hover a {
       text-shadow: 0 0 5px #666;
     }
-    .asset-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 20px;
+    .content {
       margin-top: 100px;
     }
-    .asset-tile {
+    .tile {
       background: rgba(105,93,79,0.9);
       border-radius: 8px;
       padding: 15px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-      position: relative;
+      margin-bottom: 20px;
     }
-    .recommendation {
+    .tile h3 {
+      margin-top: 0;
+    }
+    .wert-box {
       font-weight: bold;
-      padding: 5px;
-      border-radius: 4px;
-      margin-top: 10px;
+      color: #00e676;
     }
-    .ziel { background: #003300; color: #00ff7f; }
-    .stopp { background: #660000; color: #ff4d4d; }
-    .alarm { background: #8b0000; color: white; }
-    .yellow { background: #5c4b00; color: #ffd700; }
-    .red { background: #400000; color: #ff6666; }
-    .neutral { background: #333; color: #ccc; }
+    .verlust-box {
+      font-weight: bold;
+      color: #ff5252;
+    }
   </style>
 </head>
 <body>
   <nav id="navMenu">
-    <div class="menu-item"><a href="index.html"><i data-feather="home"></i> Home</a></div>
-    <div class="menu-item"><a href="verwaltung.html" class="active"><i data-feather="folder"></i> Verwaltung</a></div>
+    <div class="menu-item"><a href="index.html" class="active"><i data-feather="home"></i> Home</a></div>
+    <div class="menu-item"><a href="verwaltung.html"><i data-feather="folder"></i> Verwaltung</a></div>
   </nav>
 
-  <main class="asset-grid" id="aktienGrid"></main>
+  <div class="content" id="mainContent"></div>
 
   <script>
-    let nameMap = JSON.parse(localStorage.getItem("nameMap") || JSON.stringify({
-  "AAPL": "Apple Inc.",
-  "MSFT": "Microsoft Corp.",
-  "TSLA": "Tesla Inc."
-}));
-    let portfolio = JSON.parse(localStorage.getItem("portfolio") || JSON.stringify([
-  { symbol: "AAPL", kauf: 130, aktuell: 135, ziel: 150, stop: 120 },
-  { symbol: "MSFT", kauf: 250, aktuell: 245, ziel: 270, stop: 230 },
-  { symbol: "TSLA", kauf: 700, aktuell: 710, ziel: 750, stop: 660 }
-]));
+    const portfolio = JSON.parse(localStorage.getItem("portfolio") || "[]");
+    const nameMap = JSON.parse(localStorage.getItem("nameMap") || "{}");
 
-    function getEmpfehlung(aktie) {
-      const diff = ((aktie.aktuell - aktie.kauf) / aktie.kauf) * 100;
-      if (aktie.aktuell <= aktie.stop) return { text: '<i data-feather="x-octagon"></i> Stop-Loss erreicht', klasse: 'stopp' };
-      if (aktie.aktuell >= aktie.ziel) return { text: '<i data-feather="check-circle"></i> Ziel erreicht – verkaufen', klasse: 'ziel' };
-      if (diff >= 5) return { text: '<i data-feather="eye"></i> Beobachten', klasse: 'yellow' };
-      if (diff < 0) return { text: '<i data-feather="alert-circle"></i> Halten', klasse: 'red' };
-      return { text: '<i data-feather="clock"></i> Halten', klasse: 'neutral' };
-    }
+    function renderStartseite() {
+      const container = document.getElementById("mainContent");
+      container.innerHTML = "";
 
-    function renderGrid() {
-      const grid = document.getElementById("aktienGrid");
-      grid.innerHTML = "";
-      portfolio.forEach((aktie) => {
-        const diff = ((aktie.aktuell - aktie.kauf) / aktie.kauf) * 100;
-        const empfehlung = getEmpfehlung(aktie);
-        const tile = document.createElement("div");
-        tile.className = "asset-tile";
-        tile.innerHTML = `
-          <h3>${aktie.symbol} – ${nameMap[aktie.symbol] || "Unbekannt"}</h3>
-          <div>Kaufkurs: <strong>${aktie.kauf.toFixed(2)} $</strong></div>
-          <div>Aktuell: <strong>${aktie.aktuell.toFixed(2)} $</strong></div>
-          <div>Ziel: ${aktie.ziel.toFixed(2)} $</div>
-          <div>Stop: ${aktie.stop.toFixed(2)} $</div>
-          <div>Performance: <strong>${diff.toFixed(2)} %</strong></div>
-          <div class="recommendation ${empfehlung.klasse}">${empfehlung.text}</div>
+      if (portfolio.length === 0) {
+        const info = document.createElement("div");
+        info.className = "tile";
+        info.innerHTML = `
+          <h3>Keine Aktien im Portfolio</h3>
+          <p>Bitte füge zuerst Aktien über die <a href="verwaltung.html">Verwaltung</a> hinzu.</p>
         `;
-        grid.appendChild(tile);
+        container.appendChild(info);
+        return;
+      }
+
+      portfolio.forEach(eintrag => {
+        const name = nameMap[eintrag.symbol] || eintrag.symbol;
+        const wert = eintrag.aktuell * eintrag.einheiten;
+        const diffAbs = (eintrag.aktuell - eintrag.kauf) * eintrag.einheiten;
+        const diffProzent = ((eintrag.aktuell - eintrag.kauf) / eintrag.kauf) * 100;
+
+        const tile = document.createElement("div");
+        tile.className = "tile";
+        tile.innerHTML = `
+          <h3>${eintrag.symbol} – ${name}</h3>
+          <div>Kaufkurs: ${eintrag.kauf.toFixed(2)} $</div>
+          <div>Aktuell: ${eintrag.aktuell.toFixed(2)} $</div>
+          <div>Einheiten: ${eintrag.einheiten ?? '-'} Stück</div>
+          <div>Gesamtwert: <span class="wert-box">${wert.toFixed(2)} $</span></div>
+          <div>Performance: <span class="${diffAbs >= 0 ? 'wert-box' : 'verlust-box'}">${diffAbs.toFixed(2)} $ (${diffProzent.toFixed(2)} %)</span></div>
+          <div>Ziel: ${eintrag.ziel.toFixed(2)} $ | Stop: ${eintrag.stop.toFixed(2)} $</div>
+          <div>Gekauft am: ${eintrag.datum ?? '-'}</div>
+          <div>Notiz: ${eintrag.notiz ?? '-'}</div>
+        `;
+        container.appendChild(tile);
       });
       feather.replace();
     }
 
-    window.onload = () => renderGrid();
+    window.onload = renderStartseite;
   </script>
 </body>
 </html>
