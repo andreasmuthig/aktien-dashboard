@@ -5,6 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Verwaltung</title>
   <script src="https://unpkg.com/feather-icons"></script>
+<script>
+function bearbeiteAktie(symbol) {
+  const eintrag = portfolio.find(e => e.symbol === symbol);
+  if (!eintrag) return alert("Aktie nicht gefunden.");
+  const aktuelleWerte = `${eintrag.kauf},${eintrag.aktuell},${eintrag.ziel},${eintrag.stop},${eintrag.einheiten},${eintrag.datum || ''},${eintrag.notiz || ''}`;
+  const neueWerte = prompt(`Bearbeite ${symbol} im Format:
+Kauf, Aktuell, Ziel, Stop, Einheiten, Datum, Notiz`, aktuelleWerte);
+  if (!neueWerte) return;
+  const teile = neueWerte.split(",");
+  if (teile.length < 5) return alert("Ungültiges Format.");
+  eintrag.kauf = parseFloat(teile[0]);
+  eintrag.aktuell = parseFloat(teile[1]);
+  eintrag.ziel = parseFloat(teile[2]);
+  eintrag.stop = parseFloat(teile[3]);
+  eintrag.einheiten = parseFloat(teile[4]);
+  eintrag.datum = teile[5] ? teile[5].trim() : eintrag.datum;
+  eintrag.notiz = teile[6] ? teile[6].trim() : eintrag.notiz;
+  localStorage.setItem("portfolio", JSON.stringify(portfolio));
+  alert("Aktie aktualisiert.");
+  renderNameList();
+  feather.replace();
+}
+</script>
+
+</script>
   <style>
     body {
       background-color: #121212;
@@ -98,7 +123,9 @@
       list.innerHTML = "";
       Object.entries(nameMap).forEach(([symbol, name]) => {
         const li = document.createElement("li");
-        li.innerHTML = `${symbol} – ${name} <button class='edit-button' onclick="loescheName('${symbol}')"><i data-feather='x'></i></button>`;
+        li.innerHTML = `${symbol} – ${name} 
+  <button class='edit-button' onclick="bearbeiteAktie('${symbol}')"><i data-feather='edit'></i></button>
+  <button class='edit-button' onclick="loescheName('${symbol}')"><i data-feather='x'></i></button>`;
         list.appendChild(li);
       });
       feather.replace();
@@ -198,8 +225,7 @@
     window.onload = () => {
   renderNameList();
   feather.replace();
-      renderNameList();
-    }
+}
   </script>
 </body>
 </html>
