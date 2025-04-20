@@ -113,10 +113,10 @@
     }
 
     function neueAktieAnlegen() {
-      const eingabe = prompt("Neue Aktie im Format: Symbol, Name, Kauf, Aktuell, Ziel, Stop", "NFLX,Netflix Inc.,350,360,380,330");
+      const eingabe = prompt("Neue Aktie im Format: Symbol, Name, Kauf, Aktuell, Ziel, Stop, Einheiten, Datum, Notiz", "NFLX,Netflix Inc.,350,360,380,330,1.5,2024-04-01,Längerfristig halten");
       if (!eingabe) return;
       const teile = eingabe.split(",");
-      if (teile.length !== 6) return alert("Bitte genau 6 Werte eingeben.");
+      if (teile.length < 7) return alert("Bitte mindestens 7 Werte eingeben.");
       const symbol = teile[0].trim().toUpperCase();
       const name = teile[1].trim();
       const neue = {
@@ -124,7 +124,10 @@
         kauf: parseFloat(teile[2]),
         aktuell: parseFloat(teile[3]),
         ziel: parseFloat(teile[4]),
-        stop: parseFloat(teile[5])
+        stop: parseFloat(teile[5]),
+        einheiten: parseFloat(teile[6]),
+        datum: teile[7] ? teile[7].trim() : new Date().toISOString().split('T')[0],
+        notiz: teile[8] ? teile[8].trim() : ""
       };
       nameMap[symbol] = name;
       portfolio.push(neue);
@@ -169,7 +172,7 @@
           list.appendChild(li);
         });
         const übernehmen = document.createElement('button');
-        übernehmen.textContent = 'Daten übernehmen';
+        übernehmen.innerHTML = '<i data-feather="check"></i> Daten übernehmen';
         übernehmen.className = 'edit-button';
         übernehmen.onclick = () => {
           localStorage.setItem("backup_portfolio", localStorage.getItem("portfolio") || "[]");
@@ -182,7 +185,7 @@
         vorschau.appendChild(list);
         vorschau.appendChild(übernehmen);
         document.querySelector(".content").appendChild(vorschau);
-        feather.replace();
+        setTimeout(() => feather.replace(), 0);
       } catch (err) {
         alert("Fehler beim Importieren.");
       }
@@ -193,7 +196,8 @@
 }
 
     window.onload = () => {
-      feather.replace();
+  renderNameList();
+  feather.replace();
       renderNameList();
     }
   </script>
