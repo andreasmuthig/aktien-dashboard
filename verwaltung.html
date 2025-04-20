@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aktien Verwaltung</title>
+  <script src="https://unpkg.com/feather-icons"></script>
+  <style>
+    body {
+      background-color: #121212;
+      color: #e0e0e0;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      margin-top: 100px;
+    }
+    #navMenu {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 70px;
+      background: rgba(53,53,53,0.95);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1100;
+    }
+    #navMenu .menu-item {
+      margin: 0 15px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 16px;
+    }
+    #navMenu .menu-item a {
+      color: #e0e0e0;
+      text-decoration: none;
+      padding: 5px 10px;
+      border-radius: 5px;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    #navMenu .menu-item:hover a {
+      text-shadow: 0 0 5px #666;
+    }
+    .edit-button {
+      margin: 5px;
+      padding: 5px 10px;
+      background-color: #444;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <nav id="navMenu">
+    <div class="menu-item"><a href="index.html"><i data-feather="home"></i> Home</a></div>
+    <div class="menu-item"><a href="aktien.html"><i data-feather="bar-chart-2"></i> Aktien</a></div>
+    <div class="menu-item"><a href="verwaltung.html"><i data-feather="folder"></i> Verwaltung</a></div>
+  </nav>
+
+  <h1>Verwaltung</h1>
+
+  <button onclick="neueAktieAnlegen()" class="edit-button"><i data-feather="plus-circle"></i> Neue Aktie</button>
+  <button onclick="exportiereDaten()" class="edit-button"><i data-feather="download"></i> Exportieren</button>
+  <button onclick="importiereDaten()" class="edit-button"><i data-feather="upload"></i> Importieren</button>
+
+  <h2>Gespeicherte Namen</h2>
+  <ul id="nameList"></ul>
+
+  <script>
+    let nameMap = JSON.parse(localStorage.getItem("nameMap") || "{}");
+    let portfolio = JSON.parse(localStorage.getItem("portfolio") || "[]");
+
+    function renderNameList() {
+      const list = document.getElementById("nameList");
+      list.innerHTML = "";
+      Object.entries(nameMap).forEach(([symbol, name]) => {
+        const li = document.createElement("li");
+        li.innerHTML = `${symbol} – ${name} <button onclick="loescheName('${symbol}')" class='edit-button'><i data-feather='x'></i></button>`;
+        list.appendChild(li);
+      });
+      feather.replace();
+    }
+
+    function loescheName(symbol) {
+      if (confirm(`Möchtest du den Namen für ${symbol} wirklich entfernen?`)) {
+        delete nameMap[symbol];
+        localStorage.setItem("nameMap", JSON.stringify(nameMap));
+        renderNameList();
+      }
+    }
+
+    function neueAktieAnlegen() {
+      const eingabe = prompt("Neue Aktie anlegen im Format: Symbol, Name, Kauf, Aktuell, Ziel, Stop", "NFLX,Netflix Inc.,350,360,380,330");
+      if (!eingabe) return;
+      const teile = eingabe.split(",");
+      if (teile.length !== 6) return alert("Bitte genau 6 Werte eingeben.");
+      const symbol = teile[0].trim().toUpperCase();
+      const name = teile[1].trim();
+      const neue = {
+        symbol,
+        kauf: parseFloat(teile[2]),
+        aktuell: parseFloat(teile[3]),
+        ziel: parseFloat(teile[4]),
+        stop: parseFloat(teile[5])
+      };
+      nameMap[symbol] = name;
+      portfolio.push(neue);
+      localStorage.setItem("nameMap", JSON.stringify(nameMap));
+      localStorage.setItem("portfolio", JSON.stringify(portfolio));
+      renderNameList();
+      alert("✅ Aktie hinzugefügt!");
+    }
+
+    function exportiereDaten() {
+      const daten = { portfolio, namen: nameMap };
+      const blob = new Blob([JSON.stringify(daten, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'aktien_export.json';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      alert("✅ Export erfolgreich durchgeführt!");
+    }
+
+    function importiereDaten() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'application/json';
+      input.onchange = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const daten = JSON.parse(e.target.result);
+            if (daten.portfolio) portfolio = daten.portfolio;
+            if (daten.namen) nameMap = daten.namen;
+            localStorage.setItem("portfolio", JSON.stringify(portfolio));
+            localStorage.setItem("nameMap", JSON.stringify(nameMap));
+            renderNameList();
+            alert("✅ Import erfolgreich geladen!");
+          } catch (err) {
+            alert("Fehler beim Importieren.");
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    }
+
+    window.onload = () => renderNameList();
+  </script>
+</body>
+</html>
