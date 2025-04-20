@@ -82,8 +82,8 @@
   <div class="content">
     <h2>Aktien-Verwaltung</h2>
     <button class="edit-button" onclick="neueAktieAnlegen()"><i data-feather="plus-circle"></i> Neue Aktie</button>
-    <button class="edit-button" onclick="exportiereDaten()"><i data-feather="download"></i> Exportieren</button>
-    <button class="edit-button" onclick="importiereDaten()"><i data-feather="upload"></i> Importieren</button>
+    <button class=\"edit-button\" onclick=\"exportiereDaten()\"><i data-feather=\"upload\"></i> Exportieren</button>
+    <button class=\"edit-button\" onclick=\"importiereDaten()\"><i data-feather=\"download\"></i> Importieren</button>
 
     <h3>Gespeicherte Namen:</h3>
     <ul id="nameList"></ul>
@@ -147,26 +147,49 @@
     }
 
     function importiereDaten() {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'application/json';
-      input.onchange = (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          try {
-            const daten = JSON.parse(e.target.result);
-            if (daten.portfolio) portfolio = daten.portfolio;
-            if (daten.namen) nameMap = daten.namen;
-            localStorage.setItem("portfolio", JSON.stringify(portfolio));
-            localStorage.setItem("nameMap", JSON.stringify(nameMap));
-            renderNameList();
-          } catch (err) {
-            alert("Fehler beim Importieren.");
-          }
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/json';
+  input.onchange = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const daten = JSON.parse(e.target.result);
+        const vorschau = document.createElement('div');
+        vorschau.style.marginTop = '20px';
+        vorschau.innerHTML = '<h3>Importierte Daten (Vorschau):</h3>';
+        const list = document.createElement('ul');
+        list.style.listStyle = 'none';
+        list.style.padding = '0';
+        daten.portfolio.forEach(a => {
+          const li = document.createElement('li');
+          li.textContent = `${a.symbol} – Kauf: ${a.kauf}, Aktuell: ${a.aktuell}`;
+          list.appendChild(li);
+        });
+        const übernehmen = document.createElement('button');
+        übernehmen.textContent = 'Daten übernehmen';
+        übernehmen.className = 'edit-button';
+        übernehmen.onclick = () => {
+          localStorage.setItem("backup_portfolio", localStorage.getItem("portfolio") || "[]");
+          localStorage.setItem("backup_nameMap", localStorage.getItem("nameMap") || "{}");
+          localStorage.setItem("portfolio", JSON.stringify(daten.portfolio));
+          localStorage.setItem("nameMap", JSON.stringify(daten.namen || {}));
+          alert("Import abgeschlossen. Alte Daten wurden gesichert.");
+          location.reload();
         };
-        reader.readAsText(file);
+        vorschau.appendChild(list);
+        vorschau.appendChild(übernehmen);
+        document.querySelector(".content").appendChild(vorschau);
+      } catch (err) {
+        alert("Fehler beim Importieren.");
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
       };
       input.click();
     }
