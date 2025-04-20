@@ -79,11 +79,19 @@
     <div class="menu-item"><a href="verwaltung.html"><i data-feather="folder"></i> Verwaltung</a></div>
   </nav>
 
-  <div class="asset-grid" id="aktienGrid"></div>
+  <main class="asset-grid" id="aktienGrid"></main>
 
   <script>
-    let nameMap = JSON.parse(localStorage.getItem("nameMap") || "{}");
-    let portfolio = JSON.parse(localStorage.getItem("portfolio") || "[]");
+    let nameMap = JSON.parse(localStorage.getItem("nameMap") || JSON.stringify({
+  "AAPL": "Apple Inc.",
+  "MSFT": "Microsoft Corp.",
+  "TSLA": "Tesla Inc."
+}));
+    let portfolio = JSON.parse(localStorage.getItem("portfolio") || JSON.stringify([
+  { symbol: "AAPL", kauf: 130, aktuell: 135, ziel: 150, stop: 120 },
+  { symbol: "MSFT", kauf: 250, aktuell: 245, ziel: 270, stop: 230 },
+  { symbol: "TSLA", kauf: 700, aktuell: 710, ziel: 750, stop: 660 }
+]));
 
     function getEmpfehlung(aktie) {
       const diff = ((aktie.aktuell - aktie.kauf) / aktie.kauf) * 100;
