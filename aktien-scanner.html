@@ -35,11 +35,30 @@
       border-radius: 8px;
       padding: 15px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      position: relative;
+      transition: box-shadow 0.3s ease;
+    }
+    .tile.hervorgehoben {
+      box-shadow: 0 0 12px 4px #00e676;
     }
     .tile h3 { margin-top: 0; }
     .score-good { color: #00e676; font-weight: bold; }
     .score-watch { color: #ffd54f; font-weight: bold; }
     .score-warn { color: #ff5252; font-weight: bold; }
+    .beobachten-btn {
+      margin-top: 10px;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 5px;
+      background-color: #2e7d32;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .beobachten-btn:disabled {
+      background-color: #555;
+      cursor: default;
+    }
   </style>
 </head>
 <body>
@@ -62,6 +81,16 @@
       { aktie: "NVIDIA", kurs: 860, einstieg: 850, tp1: 930, tp2: 960, sl: 820, maTrend: true, rsi: 72 }
     ];
 
+    const beobachteteAktien = JSON.parse(localStorage.getItem('beobachteteAktien') || '[]');
+
+    function speichernBeobachtung(symbol) {
+      if (!beobachteteAktien.includes(symbol)) {
+        beobachteteAktien.push(symbol);
+        localStorage.setItem('beobachteteAktien', JSON.stringify(beobachteteAktien));
+        renderScanner();
+      }
+    }
+
     function berechneCRV(tp1, einstieg, sl) {
       return ((tp1 - einstieg) / (einstieg - sl)).toFixed(2);
     }
@@ -79,8 +108,11 @@
         scoreClass = "score-watch";
       }
 
+      const istBeobachtet = beobachteteAktien.includes(e.aktie);
+      const tileClass = istBeobachtet ? 'tile hervorgehoben' : 'tile';
+
       return `
-        <div class="tile">
+        <div class="${tileClass}">
           <h3>${e.aktie}</h3>
           <div>Kurs: ${e.kurs} €</div>
           <div>Einstieg: ${e.einstieg} €</div>
@@ -88,6 +120,7 @@
           <div>CRV: ${crv}</div>
           <div>RSI: ${e.rsi}</div>
           <div class="${scoreClass}">Empfehlung: ${empfehlung}</div>
+          <button class="beobachten-btn" onclick="speichernBeobachtung('${e.aktie}')" ${istBeobachtet ? 'disabled' : ''}>📌 Beobachten</button>
         </div>`;
     }
 
