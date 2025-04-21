@@ -74,7 +74,19 @@
       font-weight: bold;
       color: #ff5252;
     }
-  </style>
+      .filter-button {
+      background-color: rgba(255, 255, 255, 0.05);
+      color: #e0e0e0;
+      border: 1px solid #666;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .filter-button:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
 </head>
 <body>
   <nav id="navMenu">
@@ -82,19 +94,22 @@
     <div class="menu-item"><a href="verwaltung.html"><i data-feather="folder"></i> Verwaltung</a></div>
   </nav>
 
-  <div style="margin-top: 80px; text-align: center;">
-  <label for="filterSelect">Sortieren nach:</label>
-  <select id="filterSelect" onchange="renderStartseite()" style="margin: 10px; padding: 5px;">
-    <option value="">Standard</option>
-    <option value="gewinn">Nur Gewinn</option>
-    <option value="performance">Performance absteigend</option>
-    <option value="wert">Gesamtwert absteigend</option>
-  </select>
+  <div style="margin-top: 80px; text-align: center; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+  <button class="filter-button" onclick="setFilter('')">Alle</button>
+  <button class="filter-button" onclick="setFilter('gewinn')">Nur Gewinn</button>
+  <button class="filter-button" onclick="setFilter('performance')">Performance</button>
+  <button class="filter-button" onclick="setFilter('wert')">Gesamtwert</button>
+</div>
 </div>
 
 <div class="content" id="mainContent"></div>
 
   <script>
+    let currentFilter = "";
+    function setFilter(value) {
+      currentFilter = value;
+      renderStartseite();
+    }
     const portfolio = JSON.parse(localStorage.getItem("portfolio") || "[]");
     const nameMap = JSON.parse(localStorage.getItem("nameMap") || "{}");
 
@@ -114,7 +129,7 @@
       }
 
       let filtered = [...portfolio];
-      const filter = document.getElementById("filterSelect")?.value;
+      const filter = currentFilter;
       if (filter === "gewinn") {
         filtered = filtered.filter(e => (e.aktuell - e.kauf) * e.einheiten > 0);
       } else if (filter === "performance") {
@@ -144,8 +159,8 @@
               <circle cx="30" cy="30" r="25" stroke="${diffAbs >= 0 ? '#00e676' : '#ff5252'}" stroke-width="5" fill="none" stroke-dasharray="157" stroke-dashoffset="${157 - Math.min(157, Math.max(0, 157 * (diffProzent / 100)))}" transform="rotate(-90 30 30)" />
             </svg>
             <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:12px;font-weight:bold;">${diffProzent.toFixed(1)}%</div>
-          </div>`
-          <div>Ziel: ${eintrag.ziel.toFixed(2)} $ | Stop: ${eintrag.stop.toFixed(2)} $</div>
+          </div>` +
+          `<div>Ziel: ${eintrag.ziel.toFixed(2)} $ | Stop: ${eintrag.stop.toFixed(2)} $</div>
           <div>Gekauft am: ${eintrag.datum ?? '-'}</div>
           <div>Notiz: ${eintrag.notiz ?? '-'}</div>
         `;
