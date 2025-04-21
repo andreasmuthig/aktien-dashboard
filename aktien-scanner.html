@@ -84,8 +84,12 @@
           const proxy = 'https://api.allorigins.win/raw?url=';
           const url = proxy + encodeURIComponent(endpoint);
           const res = await fetch(url);
-          const data = await res.json();
-          const r = data.quoteSummary.result[0];
+          const json = await res.json();
+          const r = json.quoteSummary?.result?.[0];
+          if (!r) {
+            console.warn('Keine Daten für', e.aktie);
+            return;
+          }
           e.kurs = r.price.regularMarketPrice.raw;
           // RSI aus Chartdaten nicht verfügbar hier, mit summaryDetail nicht vorhanden
           // PEG
