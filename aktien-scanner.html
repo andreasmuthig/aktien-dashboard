@@ -54,10 +54,11 @@
       color: white;
       cursor: pointer;
       font-size: 14px;
+      box-shadow: 0 0 10px #2e7d32;
     }
-    .beobachten-btn:disabled {
-      background-color: #555;
-      cursor: default;
+    .beobachten-btn.aktiv {
+      background-color: #00e676;
+      box-shadow: 0 0 15px 3px #00e676;
     }
   </style>
 </head>
@@ -81,14 +82,17 @@
       { aktie: "NVIDIA", kurs: 860, einstieg: 850, tp1: 930, tp2: 960, sl: 820, maTrend: true, rsi: 72 }
     ];
 
-    const beobachteteAktien = JSON.parse(localStorage.getItem('beobachteteAktien') || '[]');
+    let beobachteteAktien = JSON.parse(localStorage.getItem('beobachteteAktien') || '[]');
 
-    function speichernBeobachtung(symbol) {
-      if (!beobachteteAktien.includes(symbol)) {
+    function toggleBeobachtung(symbol) {
+      const index = beobachteteAktien.indexOf(symbol);
+      if (index === -1) {
         beobachteteAktien.push(symbol);
-        localStorage.setItem('beobachteteAktien', JSON.stringify(beobachteteAktien));
-        renderScanner();
+      } else {
+        beobachteteAktien.splice(index, 1);
       }
+      localStorage.setItem('beobachteteAktien', JSON.stringify(beobachteteAktien));
+      renderScanner();
     }
 
     function berechneCRV(tp1, einstieg, sl) {
@@ -110,6 +114,8 @@
 
       const istBeobachtet = beobachteteAktien.includes(e.aktie);
       const tileClass = istBeobachtet ? 'tile hervorgehoben' : 'tile';
+      const buttonClass = istBeobachtet ? 'beobachten-btn aktiv' : 'beobachten-btn';
+      const buttonLabel = istBeobachtet ? '👁️ Beobachten' : '📌 Beobachten';
 
       return `
         <div class="${tileClass}">
@@ -120,7 +126,7 @@
           <div>CRV: ${crv}</div>
           <div>RSI: ${e.rsi}</div>
           <div class="${scoreClass}">Empfehlung: ${empfehlung}</div>
-          <button class="beobachten-btn" onclick="speichernBeobachtung('${e.aktie}')" ${istBeobachtet ? 'disabled' : ''}>📌 Beobachten</button>
+          <button class="${buttonClass}" onclick="toggleBeobachtung('${e.aktie}')">${buttonLabel}</button>
         </div>`;
     }
 
