@@ -80,7 +80,9 @@
       btn.textContent = 'Lade Daten...';
       await Promise.all(daten.map(async e => {
         try {
-          const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${e.aktie}?modules=summaryDetail,financialData,earningsTrend,recommendationTrend,price`;
+          const endpoint = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${e.aktie}?modules=summaryDetail,financialData,earningsTrend,recommendationTrend,price`;
+          const proxy = 'https://api.allorigins.win/raw?url=';
+          const url = proxy + encodeURIComponent(endpoint);
           const res = await fetch(url);
           const data = await res.json();
           const r = data.quoteSummary.result[0];
