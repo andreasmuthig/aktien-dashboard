@@ -36,10 +36,11 @@
       padding: 15px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.3);
       position: relative;
-      transition: box-shadow 0.3s ease;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
     }
     .tile.hervorgehoben {
-      box-shadow: 0 0 12px 4px #00e676;
+      border: 2px solid #2e7d32;
     }
     .tile h3 { margin-top: 0; }
     .score-good { color: #00e676; font-weight: bold; }
@@ -54,11 +55,10 @@
       color: white;
       cursor: pointer;
       font-size: 14px;
-      box-shadow: 0 0 10px #2e7d32;
     }
     .beobachten-btn.aktiv {
-      background-color: #00e676;
-      box-shadow: 0 0 15px 3px #00e676;
+      background-color: #2e7d32;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -115,7 +115,7 @@
       const istBeobachtet = beobachteteAktien.includes(e.aktie);
       const tileClass = istBeobachtet ? 'tile hervorgehoben' : 'tile';
       const buttonClass = istBeobachtet ? 'beobachten-btn aktiv' : 'beobachten-btn';
-      const buttonLabel = istBeobachtet ? '👁️ Beobachten' : '📌 Beobachten';
+      const buttonLabel = 'Beobachten';
 
       return `
         <div class="${tileClass}">
