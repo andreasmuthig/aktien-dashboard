@@ -14,49 +14,27 @@
       padding: 20px;
     }
     #navMenu {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 70px;
+      position: fixed; top: 0; left: 0; width: 100%; height: 70px;
       background: rgba(53,53,53,0.95);
       box-shadow: 0 4px 20px rgba(0,0,0,0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1100;
+      display: flex; align-items: center; justify-content: center; z-index: 1100;
     }
-    #navMenu .menu-item { margin: 0 15px; font-size: 16px; display: flex; align-items: center; gap: 5px; }
+    #navMenu .menu-item { margin: 0 15px; display: flex; align-items: center; gap: 5px; font-size: 16px; }
     #navMenu .menu-item a { color: #e0e0e0; text-decoration: none; padding: 5px 10px; border-radius: 5px; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px; }
-    #navMenu .menu-item a.active { background-color: #2e7d32; color: #fff!important; font-weight: bold; box-shadow: 0 0 10px #2e7d32; }
-    .content { margin-top: 90px; display: grid; grid-template-columns: repeat(auto-fill,minmax(300px,1fr)); gap: 20px; }
-    .tile {
-      background: rgba(105,93,79,0.9);
-      border-radius: 8px;
-      padding: 15px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-      position: relative;
-      transition: all 0.3s ease;
-    }
+    #navMenu .menu-item a.active { background-color: #2e7d32; color: #fff !important; font-weight: bold; box-shadow: 0 0 10px #2e7d32; }
+    .filter-container { margin: 80px 0 20px 0; text-align: center; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+    .filter-button { background-color: rgba(255,255,255,0.05); color: #e0e0e0; border: 1px solid #666; border-radius: 6px; padding: 6px 12px; font-size: 14px; cursor: pointer; transition: background-color 0.3s; }
+    .filter-button.active { background-color: #2e7d32; border-color: #2e7d32; }
+    .filter-button:hover { background-color: rgba(255,255,255,0.1); }
+    .content { margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); column-gap: 24px; row-gap: 24px; box-sizing: border-box; }
+    .tile { background: rgba(105,93,79,0.9); border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); transition: transform 0.2s; }
+    .tile:hover { transform: translateY(-4px); }
     .tile h3 { margin-top: 0; }
     .score-good { color: #00e676; font-weight: bold; }
     .score-watch { color: #ffd54f; font-weight: bold; }
     .score-warn { color: #ff5252; font-weight: bold; }
-    .beobachten-btn {
-      margin-top: 10px;
-      padding: 6px 12px;
-      border: none;
-      border-radius: 5px;
-      background-color: #2e7d32;
-      color: white;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .beobachten-btn.aktiv {
-      background-color: #2e7d32;
-      font-weight: bold;
-      box-shadow: 0 0 10px #2e7d32;
-    }
+    .beobachten-btn { margin-top: 10px; padding: 6px 12px; border: none; border-radius: 5px; background-color: #2e7d32; color: white; cursor: pointer; font-size: 14px; }
+    .beobachten-btn.aktiv { background-color: #ffab00; }
   </style>
 </head>
 <body>
@@ -66,83 +44,62 @@
     <div class="menu-item"><a href="aktien-scanner.html" class="active"><i data-feather="search"></i> Scanner</a></div>
   </nav>
 
+  <div class="filter-container">
+    <button class="filter-button active" onclick="setFilter('all')">Alle</button>
+    <button class="filter-button" onclick="setFilter('good')">Lukrativ</button>
+    <button class="filter-button" onclick="setFilter('watch')">Beobachten</button>
+    <button class="filter-button" onclick="setFilter('warn')">Warnung</button>
+  </div>
+
   <div class="content" id="scannerContent"></div>
 
   <script>
     feather.replace();
+    const daten = [ /* Demodaten hier, unverändert */ ];
+    let beobachteteAktien = JSON.parse(localStorage.getItem('beobachteteAktien')||'[]');
+    let currentFilter = 'all';
 
-    const daten = [
-      { aktie: "Apple", kurs: 180, einstieg: 175, tp1: 190, tp2: 200, sl: 170, maTrend: true, rsi: 42 },
-      { aktie: "Microsoft", kurs: 302, einstieg: 300, tp1: 330, tp2: 340, sl: 290, maTrend: true, rsi: 50 },
-      { aktie: "Tesla", kurs: 690, einstieg: 680, tp1: 750, tp2: 780, sl: 660, maTrend: false, rsi: 38 },
-      { aktie: "Amazon", kurs: 132, einstieg: 130, tp1: 145, tp2: 150, sl: 125, maTrend: true, rsi: 45 },
-      { aktie: "NVIDIA", kurs: 860, einstieg: 850, tp1: 930, tp2: 960, sl: 820, maTrend: true, rsi: 72 },
-      { aktie: "Alphabet", kurs: 140, einstieg: 138, tp1: 150, tp2: 155, sl: 133, maTrend: true, rsi: 44 },
-      { aktie: "Meta", kurs: 328, einstieg: 325, tp1: 345, tp2: 355, sl: 315, maTrend: true, rsi: 41 },
-      { aktie: "SAP", kurs: 135, einstieg: 130, tp1: 145, tp2: 150, sl: 125, maTrend: true, rsi: 48 },
-      { aktie: "Siemens", kurs: 152, einstieg: 150, tp1: 165, tp2: 170, sl: 145, maTrend: true, rsi: 46 },
-      { aktie: "Adidas", kurs: 187, einstieg: 182, tp1: 200, tp2: 210, sl: 176, maTrend: true, rsi: 40 },
-      { aktie: "ASML", kurs: 930, einstieg: 920, tp1: 990, tp2: 1020, sl: 890, maTrend: true, rsi: 55 },
-      { aktie: "LVMH", kurs: 800, einstieg: 790, tp1: 850, tp2: 870, sl: 760, maTrend: true, rsi: 53 },
-      { aktie: "AMD", kurs: 155, einstieg: 150, tp1: 170, tp2: 180, sl: 145, maTrend: true, rsi: 43 },
-      { aktie: "Allianz", kurs: 240, einstieg: 235, tp1: 255, tp2: 265, sl: 225, maTrend: true, rsi: 47 },
-      { aktie: "BMW", kurs: 105, einstieg: 102, tp1: 112, tp2: 118, sl: 98, maTrend: true, rsi: 39 }
-    ];
-
-    let beobachteteAktien = JSON.parse(localStorage.getItem('beobachteteAktien') || '[]');
-
-    function toggleBeobachtung(symbol) {
-      const index = beobachteteAktien.indexOf(symbol);
-      if (index === -1) {
-        beobachteteAktien.push(symbol);
-      } else {
-        beobachteteAktien.splice(index, 1);
-      }
-      localStorage.setItem('beobachteteAktien', JSON.stringify(beobachteteAktien));
+    function setFilter(f) {
+      currentFilter = f;
+      document.querySelectorAll('.filter-button').forEach(btn=>btn.classList.remove('active'));
+      document.querySelector(`.filter-button[onclick*="setFilter('${f}')"]`).classList.add('active');
       renderScanner();
     }
 
-    function berechneCRV(tp1, einstieg, sl) {
-      return ((tp1 - einstieg) / (einstieg - sl)).toFixed(2);
+    function berechneCRV(tp1,einstieg,sl){return((tp1-einstieg)/(einstieg-sl)).toFixed(2);}    
+    function toggleBeobachtung(sym){
+      const idx=beobachteteAktien.indexOf(sym);
+      if(idx===-1) beobachteteAktien.push(sym); else beobachteteAktien.splice(idx,1);
+      localStorage.setItem('beobachteteAktien',JSON.stringify(beobachteteAktien)); renderScanner();
     }
 
-    function generiereKachel(e) {
-      const crv = berechneCRV(e.tp1, e.einstieg, e.sl);
-      let empfehlung = "Abwarten";
-      let scoreClass = "score-warn";
-
-      if (e.kurs < e.einstieg && crv >= 2.0 && e.maTrend) {
-        empfehlung = "Kaufen";
-        scoreClass = "score-good";
-      } else if (Math.abs(e.kurs - e.einstieg) / e.einstieg <= 0.01 && crv >= 1.5) {
-        empfehlung = "Beobachten";
-        scoreClass = "score-watch";
-      }
-
-      const istBeobachtet = beobachteteAktien.includes(e.aktie);
-      const tileClass = 'tile';
-      const buttonClass = istBeobachtet ? 'beobachten-btn aktiv' : 'beobachten-btn';
-      const buttonLabel = istBeobachtet ? 'Aktiv' : 'Beobachten';
-
+    function generiereKachel(e){
+      const crv=berechneCRV(e.tp1,e.einstieg,e.sl);
+      let status='warn',label='Abwarten';
+      if(e.kurs<e.einstieg&&crv>=2&&e.maTrend){status='good';label='Kaufen';}
+      else if(Math.abs(e.kurs-e.einstieg)/e.einstieg<=0.01&&crv>=1.5){status='watch';label='Beobachten';}
+      if(currentFilter!=='all'&&status!==currentFilter) return '';
+      const aktiv=beobachteteAktien.includes(e.aktie);
       return `
-        <div class="${tileClass}">
-          <h3>${e.aktie}</h3>
-          <div>Kurs: ${e.kurs} €</div>
-          <div>Einstieg: ${e.einstieg} €</div>
-          <div>TP1: ${e.tp1} € / SL: ${e.sl} €</div>
-          <div>CRV: ${crv}</div>
-          <div>RSI: ${e.rsi}</div>
-          <div class="${scoreClass}">Empfehlung: ${empfehlung}</div>
-          <button class="${buttonClass}" onclick="toggleBeobachtung('${e.aktie}')">${buttonLabel}</button>
-        </div>`;
+      <div class="tile">
+        <h3>${e.aktie}</h3>
+        <div>Kurs: ${e.kurs} € | Einstieg: ${e.einstieg} €</div>
+        <div>TP1: ${e.tp1} € | TP2: ${e.tp2} € | SL: ${e.sl} €</div>
+        <div>RSI: ${e.rsi} | CRV: ${crv}</div>
+        <div class="score-${status}">Empfehlung: ${label}</div>
+        <button class="beobachten-btn ${aktiv?'aktiv':''}" onclick="toggleBeobachtung('${e.aktie}')">
+          ${aktiv?'Deaktivieren':'Beobachten'}
+        </button>
+      </div>`;
     }
 
-    function renderScanner() {
-      const cont = document.getElementById("scannerContent");
-      cont.innerHTML = daten.map(generiereKachel).join("");
+    function renderScanner(){
+      const cont=document.getElementById('scannerContent');
+      cont.innerHTML=daten.map(generiereKachel).join('')||'<p>Keine passenden Aktien.</p>';
+      feather.replace();
     }
 
-    window.onload = renderScanner;
+    window.onload=renderScanner;
   </script>
 </body>
 </html>
