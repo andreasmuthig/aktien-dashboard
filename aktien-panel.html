@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Aktien Panel</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: #f0f0f0;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    h2 {
+      color: #00ffaa;
+      margin-top: 40px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+    }
+    th, td {
+      border: 1px solid #333;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #1e1e1e;
+    }
+    tr:nth-child(even) {
+      background-color: #1a1a1a;
+    }
+    .begruendung {
+      text-align: left;
+      background-color: #161616;
+      font-style: italic;
+      padding: 10px;
+      border-left: 5px solid #00ffaa;
+    }
+  </style>
+</head>
+<body>
+  <h1>📈 Aktien Panel</h1>
+
+  <h2>✅ Empfohlene Käufe</h2>
+  <div id="kaufListe"></div>
+
+  <h2>👁️ Beobachtungsliste</h2>
+  <div id="beobachtungListe"></div>
+
+  <script>
+    const daten = [
+      { aktie: "Apple", kurs: 180, einstieg: 175, tp1: 190, tp2: 200, sl: 170, maTrend: true, rsi: 42 },
+      { aktie: "Microsoft", kurs: 302, einstieg: 300, tp1: 330, tp2: 340, sl: 290, maTrend: true, rsi: 50 },
+      { aktie: "Tesla", kurs: 690, einstieg: 680, tp1: 750, tp2: 780, sl: 660, maTrend: false, rsi: 38 },
+      { aktie: "Amazon", kurs: 132, einstieg: 130, tp1: 145, tp2: 150, sl: 125, maTrend: true, rsi: 45 },
+      { aktie: "NVIDIA", kurs: 860, einstieg: 850, tp1: 930, tp2: 960, sl: 820, maTrend: true, rsi: 72 }
+    ];
+
+    function berechneCRV(tp1, einstieg, sl) {
+      return ((tp1 - einstieg) / (einstieg - sl)).toFixed(2);
+    }
+
+    function generiereTabelle(daten, filterFunktion) {
+      let html = '<table><tr><th>Aktie</th><th>Kurs</th><th>Einstieg</th><th>TP1</th><th>TP2</th><th>SL</th><th>CRV</th><th>Empfehlung</th></tr>';
+
+      daten.filter(filterFunktion).forEach(d => {
+        const crv = berechneCRV(d.tp1, d.einstieg, d.sl);
+        let empfehlung = "Abwarten";
+
+        if (d.kurs < d.einstieg && crv >= 2.0 && d.maTrend) {
+          empfehlung = "Kaufen";
+        } else if (Math.abs(d.kurs - d.einstieg) / d.einstieg <= 0.01 && crv >= 1.5) {
+          empfehlung = "Beobachten";
+        } else if (d.kurs > d.tp1 || crv < 1.0 || d.rsi > 70) {
+          empfehlung = "Verkaufen";
+        }
+
+        html += `<tr>
+          <td>${d.aktie}</td>
+          <td>${d.kurs} €</td>
+          <td>${d.einstieg} €</td>
+          <td>${d.tp1} €</td>
+          <td>${d.tp2} €</td>
+          <td>${d.sl} €</td>
+          <td>${crv}</td>
+          <td>${empfehlung}</td>
+        </tr>`;
+
+        html += `<tr><td colspan="8" class="begruendung">
+          ${empfehlung === "Kaufen" ? `Die Aktie ${d.aktie} liegt unter dem Einstiegskurs und zeigt ein CRV von ${crv}. Der Trend ist positiv.`
+          : empfehlung === "Beobachten" ? `Die Aktie ${d.aktie} nähert sich einem attraktiven Einstiegspunkt. CRV: ${crv}.`
+          : empfehlung === "Verkaufen" ? `Die Aktie ${d.aktie} hat ihr Ziel überschritten oder der RSI ist überhitzt.`
+          : `Aktuell kein klares Signal für ${d.aktie}.`}
+        </td></tr>`;
+      });
+
+      html += '</table>';
+      return html;
+    }
+
+    document.getElementById("kaufListe").innerHTML = generiereTabelle(daten, d => {
+      const crv = berechneCRV(d.tp1, d.einstieg, d.sl);
+      return d.kurs < d.einstieg && crv >= 2.0 && d.maTrend;
+    });
+
+    document.getElementById("beobachtungListe").innerHTML = generiereTabelle(daten, d => {
+      const crv = berechneCRV(d.tp1, d.einstieg, d.sl);
+      return Math.abs(d.kurs - d.einstieg) / d.einstieg <= 0.01 && crv >= 1.5;
+    });
+  </script>
+</body>
+</html>
