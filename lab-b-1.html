@@ -49,16 +49,19 @@
     .content {
   margin-top: 100px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 24px;
 }
     .tile {
   background: rgba(105,93,79,0.9);
   border-radius: 8px;
   padding: 15px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   margin: 0;
   height: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
 }
     .tile h3 {
       margin-top: 0;
@@ -79,7 +82,17 @@
     <div class="menu-item"><a href="verwaltung.html"><i data-feather="folder"></i> Verwaltung</a></div>
   </nav>
 
-  <div class="content" id="mainContent"></div>
+  <div style="margin-top: 80px; text-align: center;">
+  <label for="filterSelect">Sortieren nach:</label>
+  <select id="filterSelect" onchange="renderStartseite()" style="margin: 10px; padding: 5px;">
+    <option value="">Standard</option>
+    <option value="gewinn">Nur Gewinn</option>
+    <option value="performance">Performance absteigend</option>
+    <option value="wert">Gesamtwert absteigend</option>
+  </select>
+</div>
+
+<div class="content" id="mainContent"></div>
 
   <script>
     const portfolio = JSON.parse(localStorage.getItem("portfolio") || "[]");
@@ -100,7 +113,17 @@
         return;
       }
 
-      portfolio.forEach(eintrag => {
+      let filtered = [...portfolio];
+      const filter = document.getElementById("filterSelect")?.value;
+      if (filter === "gewinn") {
+        filtered = filtered.filter(e => (e.aktuell - e.kauf) * e.einheiten > 0);
+      } else if (filter === "performance") {
+        filtered.sort((a, b) => ((b.aktuell - b.kauf) / b.kauf) - ((a.aktuell - a.kauf) / a.kauf));
+      } else if (filter === "wert") {
+        filtered.sort((a, b) => (b.aktuell * b.einheiten) - (a.aktuell * a.einheiten));
+      }
+
+      filtered.forEach(eintrag => {
         const name = nameMap[eintrag.symbol] || eintrag.symbol;
         const wert = eintrag.aktuell * eintrag.einheiten;
         const diffAbs = (eintrag.aktuell - eintrag.kauf) * eintrag.einheiten;
@@ -115,6 +138,13 @@
           <div>Einheiten: ${eintrag.einheiten ?? '-'} Stück</div>
           <div>Gesamtwert: <span class="wert-box">${wert.toFixed(2)} $</span></div>
           <div>Performance: <span class="${diffAbs >= 0 ? 'wert-box' : 'verlust-box'}">${diffAbs.toFixed(2)} $ (${diffProzent.toFixed(2)} %)</span></div>
+          <div style='margin-top: 10px; position: relative; width: 60px; height: 60px;'>
+            <svg width="60" height="60">
+              <circle cx="30" cy="30" r="25" stroke="#444" stroke-width="5" fill="none" />
+              <circle cx="30" cy="30" r="25" stroke="${diffAbs >= 0 ? '#00e676' : '#ff5252'}" stroke-width="5" fill="none" stroke-dasharray="157" stroke-dashoffset="${157 - Math.min(157, Math.max(0, 157 * (diffProzent / 100)))}" transform="rotate(-90 30 30)" />
+            </svg>
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:12px;font-weight:bold;">${diffProzent.toFixed(1)}%</div>
+          </div>`
           <div>Ziel: ${eintrag.ziel.toFixed(2)} $ | Stop: ${eintrag.stop.toFixed(2)} $</div>
           <div>Gekauft am: ${eintrag.datum ?? '-'}</div>
           <div>Notiz: ${eintrag.notiz ?? '-'}</div>
