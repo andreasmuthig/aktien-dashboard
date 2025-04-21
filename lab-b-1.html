@@ -49,8 +49,8 @@
     .content {
   margin-top: 100px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 28px;
 }
     .tile {
   background: rgba(105,93,79,0.9);
@@ -101,8 +101,6 @@
   <button class="filter-button" onclick="setFilter('performance')">Performance</button>
   <button class="filter-button" onclick="setFilter('wert')">Gesamtwert</button>
 </div>
-</div>
-
 <div class="content" id="mainContent"></div>
 
   <script>
@@ -154,14 +152,13 @@
           <div>Einheiten: ${eintrag.einheiten ?? '-'} Stück</div>
           <div>Gesamtwert: <span class="wert-box">${wert.toFixed(2)} $</span></div>
           <div>Performance: <span class="${diffAbs >= 0 ? 'wert-box' : 'verlust-box'}">${diffAbs.toFixed(2)} $ (${diffProzent.toFixed(2)} %)</span></div>
-          <div style='margin-top: 10px; position: relative; width: 60px; height: 60px;'>
-            <svg width="60" height="60">
-              <circle cx="30" cy="30" r="25" stroke="#444" stroke-width="5" fill="none" />
-              <circle cx="30" cy="30" r="25" stroke="${diffAbs >= 0 ? '#00e676' : '#ff5252'}" stroke-width="5" fill="none" stroke-dasharray="157" stroke-dashoffset="${157 - Math.min(157, Math.max(0, 157 * (diffProzent / 100)))}" transform="rotate(-90 30 30)" />
-            </svg>
-            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:12px;font-weight:bold;">${diffProzent.toFixed(1)}%</div>
-          </div>` +
-          `<div>Ziel: ${eintrag.ziel.toFixed(2)} $ | Stop: ${eintrag.stop.toFixed(2)} $</div>
+          <div style='margin-top: 10px;'>
+            <div style='height: 6px; background: #333; border-radius: 3px; overflow: hidden; position: relative;'>
+              <div style='width: ${Math.min(100, Math.max(0, (eintrag.aktuell / eintrag.ziel) * 100)).toFixed(0)}%; height: 100%; background: ${diffAbs >= 0 ? "#00e676" : "#ff5252"};'></div>
+              <div style='position: absolute; top: -20px; right: 0; font-size: 12px; color: #ccc;'>${Math.min(100, Math.max(0, (eintrag.aktuell / eintrag.ziel) * 100)).toFixed(0)}%</div>
+            </div>
+          </div>
+          <div>Ziel: ${eintrag.ziel.toFixed(2)} $ | Stop: ${eintrag.stop.toFixed(2)} $</div>
           <div>Gekauft am: ${eintrag.datum ?? '-'}</div>
           <div>Notiz: ${eintrag.notiz ?? '-'}</div>
         `;
