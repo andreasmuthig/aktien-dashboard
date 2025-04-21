@@ -152,8 +152,6 @@
           <div>Einheiten: ${eintrag.einheiten ?? '-'} Stück</div>
           <div>Gesamtwert: <span class="wert-box">${wert.toFixed(2)} $</span></div>
           <div>Performance: <span class="${diffAbs >= 0 ? 'wert-box' : 'verlust-box'}">${diffAbs.toFixed(2)} $ (${diffProzent.toFixed(2)} %)</span></div>
-          
-          </div>
           <div>Ziel: ${eintrag.ziel.toFixed(2)} $ | Stop: ${eintrag.stop.toFixed(2)} $</div>
           <div>Gekauft am: ${eintrag.datum ?? '-'}</div>
           <div>Notiz: ${eintrag.notiz ?? '-'}</div>
