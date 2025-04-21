@@ -152,11 +152,7 @@
           <div>Einheiten: ${eintrag.einheiten ?? '-'} Stück</div>
           <div>Gesamtwert: <span class="wert-box">${wert.toFixed(2)} $</span></div>
           <div>Performance: <span class="${diffAbs >= 0 ? 'wert-box' : 'verlust-box'}">${diffAbs.toFixed(2)} $ (${diffProzent.toFixed(2)} %)</span></div>
-          <div style='margin-top: 10px;'>
-            <div style='height: 6px; background: #333; border-radius: 3px; overflow: hidden; position: relative;'>
-              <div style='width: ${Math.min(100, Math.max(0, (eintrag.aktuell / eintrag.ziel) * 100)).toFixed(0)}%; height: 100%; background: ${diffAbs >= 0 ? "#00e676" : "#ff5252"};'></div>
-              <div style='position: absolute; top: -20px; right: 0; font-size: 12px; color: #ccc;'>${Math.min(100, Math.max(0, (eintrag.aktuell / eintrag.ziel) * 100)).toFixed(0)}%</div>
-            </div>
+          
           </div>
           <div>Ziel: ${eintrag.ziel.toFixed(2)} $ | Stop: ${eintrag.stop.toFixed(2)} $</div>
           <div>Gekauft am: ${eintrag.datum ?? '-'}</div>
