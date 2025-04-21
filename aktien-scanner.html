@@ -2,53 +2,58 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Aktien Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aktien Scanner</title>
+  <script src="https://unpkg.com/feather-icons"></script>
   <style>
     body {
       background-color: #121212;
-      color: #f0f0f0;
+      color: #e0e0e0;
       font-family: Arial, sans-serif;
+      margin: 0;
       padding: 20px;
     }
-    h2 {
-      color: #00ffaa;
-      margin-top: 40px;
-    }
-    table {
+    #navMenu {
+      position: fixed;
+      top: 0;
+      left: 0;
       width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 30px;
+      height: 70px;
+      background: rgba(53,53,53,0.95);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1100;
     }
-    th, td {
-      border: 1px solid #333;
-      padding: 10px;
-      text-align: center;
+    #navMenu .menu-item { margin: 0 15px; font-size: 16px; display: flex; align-items: center; gap: 5px; }
+    #navMenu .menu-item a { color: #e0e0e0; text-decoration: none; padding: 5px 10px; border-radius: 5px; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px; }
+    #navMenu .menu-item a.active { background-color: #2e7d32; color: #fff!important; font-weight: bold; box-shadow: 0 0 10px #2e7d32; }
+    .content { margin-top: 90px; display: grid; grid-template-columns: repeat(auto-fill,minmax(300px,1fr)); gap: 20px; }
+    .tile {
+      background: rgba(105,93,79,0.9);
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
     }
-    th {
-      background-color: #1e1e1e;
-    }
-    tr:nth-child(even) {
-      background-color: #1a1a1a;
-    }
-    .begruendung {
-      text-align: left;
-      background-color: #161616;
-      font-style: italic;
-      padding: 10px;
-      border-left: 5px solid #00ffaa;
-    }
+    .tile h3 { margin-top: 0; }
+    .score-good { color: #00e676; font-weight: bold; }
+    .score-watch { color: #ffd54f; font-weight: bold; }
+    .score-warn { color: #ff5252; font-weight: bold; }
   </style>
 </head>
 <body>
-  <h1>📈 Aktien Panel</h1>
+  <nav id="navMenu">
+    <div class="menu-item"><a href="index.html"><i data-feather="home"></i> Home</a></div>
+    <div class="menu-item"><a href="verwaltung.html"><i data-feather="folder"></i> Verwaltung</a></div>
+    <div class="menu-item"><a href="aktien-scanner.html" class="active"><i data-feather="search"></i> Scanner</a></div>
+  </nav>
 
-  <h2>✅ Empfohlene Käufe</h2>
-  <div id="kaufListe"></div>
-
-  <h2>👁️ Beobachtungsliste</h2>
-  <div id="beobachtungListe"></div>
+  <div class="content" id="scannerContent"></div>
 
   <script>
+    feather.replace();
+
     const daten = [
       { aktie: "Apple", kurs: 180, einstieg: 175, tp1: 190, tp2: 200, sl: 170, maTrend: true, rsi: 42 },
       { aktie: "Microsoft", kurs: 302, einstieg: 300, tp1: 330, tp2: 340, sl: 290, maTrend: true, rsi: 50 },
@@ -61,53 +66,37 @@
       return ((tp1 - einstieg) / (einstieg - sl)).toFixed(2);
     }
 
-    function generiereTabelle(daten, filterFunktion) {
-      let html = '<table><tr><th>Aktie</th><th>Kurs</th><th>Einstieg</th><th>TP1</th><th>TP2</th><th>SL</th><th>CRV</th><th>Empfehlung</th></tr>';
+    function generiereKachel(e) {
+      const crv = berechneCRV(e.tp1, e.einstieg, e.sl);
+      let empfehlung = "Abwarten";
+      let scoreClass = "score-warn";
 
-      daten.filter(filterFunktion).forEach(d => {
-        const crv = berechneCRV(d.tp1, d.einstieg, d.sl);
-        let empfehlung = "Abwarten";
+      if (e.kurs < e.einstieg && crv >= 2.0 && e.maTrend) {
+        empfehlung = "Kaufen";
+        scoreClass = "score-good";
+      } else if (Math.abs(e.kurs - e.einstieg) / e.einstieg <= 0.01 && crv >= 1.5) {
+        empfehlung = "Beobachten";
+        scoreClass = "score-watch";
+      }
 
-        if (d.kurs < d.einstieg && crv >= 2.0 && d.maTrend) {
-          empfehlung = "Kaufen";
-        } else if (Math.abs(d.kurs - d.einstieg) / d.einstieg <= 0.01 && crv >= 1.5) {
-          empfehlung = "Beobachten";
-        } else if (d.kurs > d.tp1 || crv < 1.0 || d.rsi > 70) {
-          empfehlung = "Verkaufen";
-        }
-
-        html += `<tr>
-          <td>${d.aktie}</td>
-          <td>${d.kurs} €</td>
-          <td>${d.einstieg} €</td>
-          <td>${d.tp1} €</td>
-          <td>${d.tp2} €</td>
-          <td>${d.sl} €</td>
-          <td>${crv}</td>
-          <td>${empfehlung}</td>
-        </tr>`;
-
-        html += `<tr><td colspan="8" class="begruendung">
-          ${empfehlung === "Kaufen" ? `Die Aktie ${d.aktie} liegt unter dem Einstiegskurs und zeigt ein CRV von ${crv}. Der Trend ist positiv.`
-          : empfehlung === "Beobachten" ? `Die Aktie ${d.aktie} nähert sich einem attraktiven Einstiegspunkt. CRV: ${crv}.`
-          : empfehlung === "Verkaufen" ? `Die Aktie ${d.aktie} hat ihr Ziel überschritten oder der RSI ist überhitzt.`
-          : `Aktuell kein klares Signal für ${d.aktie}.`}
-        </td></tr>`;
-      });
-
-      html += '</table>';
-      return html;
+      return `
+        <div class="tile">
+          <h3>${e.aktie}</h3>
+          <div>Kurs: ${e.kurs} €</div>
+          <div>Einstieg: ${e.einstieg} €</div>
+          <div>TP1: ${e.tp1} € / SL: ${e.sl} €</div>
+          <div>CRV: ${crv}</div>
+          <div>RSI: ${e.rsi}</div>
+          <div class="${scoreClass}">Empfehlung: ${empfehlung}</div>
+        </div>`;
     }
 
-    document.getElementById("kaufListe").innerHTML = generiereTabelle(daten, d => {
-      const crv = berechneCRV(d.tp1, d.einstieg, d.sl);
-      return d.kurs < d.einstieg && crv >= 2.0 && d.maTrend;
-    });
+    function renderScanner() {
+      const cont = document.getElementById("scannerContent");
+      cont.innerHTML = daten.map(generiereKachel).join("");
+    }
 
-    document.getElementById("beobachtungListe").innerHTML = generiereTabelle(daten, d => {
-      const crv = berechneCRV(d.tp1, d.einstieg, d.sl);
-      return Math.abs(d.kurs - d.einstieg) / d.einstieg <= 0.01 && crv >= 1.5;
-    });
+    window.onload = renderScanner;
   </script>
 </body>
 </html>
