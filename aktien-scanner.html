@@ -37,10 +37,6 @@
       box-shadow: 0 2px 4px rgba(0,0,0,0.3);
       position: relative;
       transition: all 0.3s ease;
-      border: 2px solid transparent;
-    }
-    .tile.hervorgehoben {
-      border: 2px solid #2e7d32;
     }
     .tile h3 { margin-top: 0; }
     .score-good { color: #00e676; font-weight: bold; }
@@ -59,6 +55,7 @@
     .beobachten-btn.aktiv {
       background-color: #2e7d32;
       font-weight: bold;
+      box-shadow: 0 0 10px #2e7d32;
     }
   </style>
 </head>
@@ -113,9 +110,9 @@
       }
 
       const istBeobachtet = beobachteteAktien.includes(e.aktie);
-      const tileClass = istBeobachtet ? 'tile hervorgehoben' : 'tile';
+      const tileClass = 'tile';
       const buttonClass = istBeobachtet ? 'beobachten-btn aktiv' : 'beobachten-btn';
-      const buttonLabel = 'Beobachten';
+      const buttonLabel = istBeobachtet ? 'Aktiv' : 'Beobachten';
 
       return `
         <div class="${tileClass}">
