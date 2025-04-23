@@ -26,41 +26,22 @@
       justify-content: center;
       z-index: 1100;
     }
-    #navMenu .menu-item {
-      margin: 0 15px;
-      font-size: 16px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-    #navMenu .menu-item a {
-      color: #e0e0e0;
-      text-decoration: none;
-      padding: 5px 10px;
-      border-radius: 5px;
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .content {
-      margin-top: 100px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 20px;
-    }
-    .tile {
-      background: rgba(105,93,79,0.9);
-      border-radius: 8px;
-      padding: 15px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    }
-    .tile h3 {
-      margin-top: 0;
-    }
-    .score-good { color: #00e676; font-weight: bold; }
-    .score-watch { color: #ffd54f; font-weight: bold; }
-    .score-warn { color: #ff5252; font-weight: bold; }
+    #navMenu .menu-item { margin: 0 15px; display: flex; align-items: center; gap: 5px; font-size: 16px; }
+    #navMenu .menu-item a { color: #e0e0e0; text-decoration: none; padding: 5px 10px; border-radius: 5px; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px; }
+    #navMenu .menu-item a.active { background-color: #2e7d32; color: #fff!important; font-weight: bold; box-shadow: 0 0 10px #2e7d32; }
+    .filter-container { margin: 80px 0 20px 0; text-align: center; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+    .filter-button { background-color: rgba(255,255,255,0.05); color: #e0e0e0; border: 1px solid #666; border-radius: 6px; padding: 6px 12px; font-size: 14px; cursor: pointer; transition: background-color 0.3s; }
+    .filter-button.active { background-color: #2e7d32; border-color: #2e7d32; }
+    .filter-button:hover { background-color: rgba(255,255,255,0.1); }
+    .content { margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); column-gap:24px; row-gap:24px; box-sizing: border-box; }
+    .tile { background: rgba(105,93,79,0.9); border-radius:8px; padding:15px; box-shadow:0 2px 4px rgba(0,0,0,0.3); transition:transform 0.2s; }
+    .tile:hover { transform: translateY(-4px); }
+    .score-good { color:#00e676; font-weight:bold; }
+    .score-watch { color:#ffd54f; font-weight:bold; }
+    .score-warn { color:#ff5252; font-weight:bold; }
+    .beobachten-btn { margin-top:10px; padding:6px 12px; border:none; border-radius:5px; background-color:#2e7d32; color:white; cursor:pointer; font-size:14px; }
+    .beobachten-btn.aktiv { background-color:#ffab00; }
+    .load-btn { margin-left:10px; background: #0066cc; }
   </style>
 </head>
 <body>
@@ -70,55 +51,93 @@
     <div class="menu-item"><a href="aktien-scanner.html" class="active"><i data-feather="search"></i> Scanner</a></div>
   </nav>
 
+  <div class="filter-container">
+    <button class="filter-button active" onclick="setFilter('all')">Alle</button>
+    <button class="filter-button" onclick="setFilter('good')">Lukrativ</button>
+    <button class="filter-button" onclick="setFilter('watch')">Beobachten</button>
+    <button class="filter-button" onclick="setFilter('warn')">Warnung</button>
+    <button class="filter-button load-btn" id="loadDataBtn">Daten abrufen</button>
+  </div>
+
   <div class="content" id="scannerContent"></div>
 
   <script>
     feather.replace();
-    const apiKey = '20cdd52ee2094c8988a6a466bb41b247';
-    const symbols = ['AAPL', 'MSFT'];
+    const daten = [
+      { aktie: "Apple" }, { aktie: "Microsoft" }
+    ];
+    let beobachteteAktien = JSON.parse(localStorage.getItem('beobachteteAktien')||'[]');
+    let currentFilter = 'all';
 
-    async function ladeAktienDaten(symbol) {
-      const url = `https://api.twelvedata.com/quote?symbol=${symbol}&apikey=${apiKey}`;
-      const rsiUrl = `https://api.twelvedata.com/rsi?symbol=${symbol}&interval=1day&apikey=${apiKey}`;
+    document.getElementById('loadDataBtn').addEventListener('click', loadAllData);
 
-      try {
-        const [quoteRes, rsiRes] = await Promise.all([
-          fetch(url),
-          fetch(rsiUrl)
-        ]);
+    async function loadAllData() {
+      const btn = document.getElementById('loadDataBtn');
+      btn.disabled = true;
+      btn.textContent = 'Lade Daten...';
+      const apiKey = '20cdd52ee2094c8988a6a466bb41b247';
+      await Promise.all(daten.map(async e => {
+        try {
+          const symbol = e.aktie === 'Apple' ? 'AAPL' : e.aktie === 'Microsoft' ? 'MSFT' : '';
+          const endpoint = `https://api.twelvedata.com/quote?symbol=${symbol}&apikey=${apiKey}`;
+          const rsiEndpoint = `https://api.twelvedata.com/rsi?symbol=${symbol}&interval=1day&apikey=${apiKey}`;
+          const res = await fetch(endpoint);
+          const data = await res.json();
+          const rsiRes = await fetch(rsiEndpoint);
+          const rsiData = await rsiRes.json();
 
-        const quoteData = await quoteRes.json();
-        const rsiData = await rsiRes.json();
+          if (!data || !data.price) return;
 
-        return {
-          symbol: quoteData.symbol,
-          name: quoteData.name,
-          price: quoteData.close,
-          change_percent: quoteData.percent_change,
-          rsi: rsiData.values ? parseFloat(rsiData.values[0].rsi) : '-'
-        };
-      } catch (error) {
-        console.error(`Fehler bei ${symbol}:`, error);
-        return null;
-      }
+          e.kurs = parseFloat(data.price);
+          e.veraenderung = parseFloat(data.percent_change);
+          e.rsi = parseFloat(rsiData.value);
+        } catch(err) {
+          console.error('Fehler für', e.aktie, err);
+        }
+      }));
+      btn.textContent = 'Daten abrufen';
+      btn.disabled = false;
+      renderScanner();
     }
 
-    async function renderScanner() {
-      const container = document.getElementById('scannerContent');
-      container.innerHTML = '';
+    function setFilter(f) {
+      currentFilter = f;
+      document.querySelectorAll('.filter-button').forEach(btn=>btn.classList.remove('active'));
+      document.querySelector(`.filter-button[onclick*="setFilter('${f}')"]`).classList.add('active');
+      renderScanner();
+    }
 
-      const daten = await Promise.all(symbols.map(s => ladeAktienDaten(s)));
-      daten.filter(Boolean).forEach(d => {
-        const tile = document.createElement('div');
-        tile.className = 'tile';
-        tile.innerHTML = `
-          <h3>${d.symbol} – ${d.name}</h3>
-          <div>Preis: ${d.price} $</div>
-          <div>Veränderung: ${d.change_percent} %</div>
-          <div>RSI: ${d.rsi}</div>
-        `;
-        container.appendChild(tile);
-      });
+    function generiereKachel(e) {
+      if (!e.kurs) return '';
+      let status = 'warn', label = 'Abwarten';
+      if (e.rsi < 30) { status = 'good'; label = 'Kauf'; }
+      else if (e.rsi < 50) { status = 'watch'; label = 'Beobachten'; }
+      const aktiv = beobachteteAktien.includes(e.aktie);
+      return `
+      <div class="tile">
+        <h3>${e.aktie}</h3>
+        <div>Preis: ${e.kurs.toFixed(2)} $</div>
+        <div>Veränderung: ${e.veraenderung.toFixed(5)} %</div>
+        <div>RSI: ${e.rsi}</div>
+        <div class="score-${status}">Empfehlung: ${label}</div>
+        <button class="beobachten-btn ${aktiv?'aktiv':''}" onclick="toggleBeobachtung('${e.aktie}')">
+          ${aktiv?'Deaktivieren':'Beobachten'}
+        </button>
+      </div>`;
+    }
+
+    function toggleBeobachtung(name) {
+      const i = beobachteteAktien.indexOf(name);
+      if (i >= 0) beobachteteAktien.splice(i,1);
+      else beobachteteAktien.push(name);
+      localStorage.setItem('beobachteteAktien', JSON.stringify(beobachteteAktien));
+      renderScanner();
+    }
+
+    function renderScanner() {
+      const cont = document.getElementById('scannerContent');
+      cont.innerHTML = daten.map(generiereKachel).join('') || '<p>Keine passenden Aktien.</p>';
+      feather.replace();
     }
 
     window.onload = renderScanner;
