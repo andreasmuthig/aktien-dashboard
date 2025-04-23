@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aktien Scanner</title>
+  <title>Beobachtungsliste</title>
   <script src="https://unpkg.com/feather-icons"></script>
   <style>
     body {
@@ -49,33 +49,8 @@
       font-weight: bold;
       box-shadow: 0 0 10px #2e7d32;
     }
-    .filter-container {
-      margin: 80px 0 20px 0;
-      text-align: center;
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .filter-button {
-      background-color: rgba(255,255,255,0.05);
-      color: #e0e0e0;
-      border: 1px solid #666;
-      border-radius: 6px;
-      padding: 6px 12px;
-      font-size: 14px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-    .filter-button.active {
-      background-color: #2e7d32;
-      border-color: #2e7d32;
-    }
-    .filter-button:hover {
-      background-color: rgba(255,255,255,0.1);
-    }
     .content {
-      margin-top: 20px;
+      margin-top: 100px;
       display: grid;
       grid-template-columns: repeat(auto-fill,minmax(280px,1fr));
       column-gap:24px;
@@ -92,12 +67,6 @@
     .tile:hover {
       transform: translateY(-4px);
     }
-    .score-good { color:#00e676; font-weight:bold; }
-    .score-watch { color:#ffd54f; font-weight:bold; }
-    .score-warn { color:#ff5252; font-weight:bold; }
-    .beobachten-btn { margin-top:10px; padding:6px 12px; border:none; border-radius:5px; background-color:#2e7d32; color:white; cursor:pointer; font-size:14px; }
-    .beobachten-btn.aktiv { background-color:#ffab00; }
-    .load-btn { margin-left:10px; background: #0066cc; }
   </style>
 </head>
 <body>
@@ -108,98 +77,30 @@
     <div class="menu-item"><a href="beobachtungsliste.html" class="active"><i data-feather="eye"></i> Beobachtungsliste</a></div>
   </nav>
 
-  <div class="filter-container">
-    <button class="filter-button active" onclick="setFilter('all')">Alle</button>
-    <button class="filter-button" onclick="setFilter('good')">Lukrativ</button>
-    <button class="filter-button" onclick="setFilter('watch')">Beobachten</button>
-    <button class="filter-button" onclick="setFilter('warn')">Warnung</button>
-    <button class="filter-button load-btn" id="loadDataBtn">Daten abrufen</button>
-  </div>
-
-  <div class="content" id="scannerContent"></div>
+  <div class="content" id="watchlistContent"></div>
 
   <script>
     feather.replace();
-    let beobachteteAktien = JSON.parse(localStorage.getItem('beobachteteAktien') || '[]');
-    if (beobachteteAktien.length === 0) {
-      beobachteteAktien = ["MSFT", "AAPL", "XIACF", "BKNG", "MSTR", "NVDA"];
-      localStorage.setItem('beobachteteAktien', JSON.stringify(beobachteteAktien));
-    }
-    let currentFilter = 'all';
-    const daten = beobachteteAktien.map(symbol => ({ aktie: symbol }));
-
-    document.getElementById('loadDataBtn').addEventListener('click', loadAllData);
-
-    async function loadAllData() {
-      const btn = document.getElementById('loadDataBtn');
-      btn.disabled = true;
-      btn.textContent = 'Lade Daten...';
-      await Promise.all(daten.map(async e => {
-        try {
-          const endpoint = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${e.aktie}?modules=summaryDetail,financialData,earningsTrend,recommendationTrend,price`;
-          const proxy = 'https://api.allorigins.win/raw?url=';
-          const url = proxy + encodeURIComponent(endpoint);
-          const res = await fetch(url);
-          const json = await res.json();
-          const r = json.quoteSummary?.result?.[0];
-          if (!r) return;
-          e.kurs = r.price.regularMarketPrice.raw;
-          e.peg = r.financialData.pegRatio.raw;
-          e.revenueGrowth = r.financialData.revenueGrowth.raw;
-          const trend = r.recommendationTrend.trend[0];
-          const total = trend.strongBuy + trend.buy + trend.hold + trend.sell + trend.strongSell;
-          e.analystBuyRatio = total ? (trend.strongBuy + trend.buy)/ total : 0;
-          e.sma50 = r.summaryDetail.fiftyDayAverage.raw;
-          e.sma200 = r.summaryDetail.twoHundredDayAverage.raw;
-        } catch(err) {
-          console.error('Fehler bei', e.aktie, err);
-        }
-      }));
-      btn.textContent = 'Daten abrufen';
-      btn.disabled = false;
-      renderScanner();
+    let watchlist = JSON.parse(localStorage.getItem('beobachteteAktien') || '[]');
+    if (watchlist.length === 0) {
+      watchlist = ["MSFT", "AAPL", "XIACF", "BKNG", "MSTR", "NVDA"];
+      localStorage.setItem('beobachteteAktien', JSON.stringify(watchlist));
     }
 
-    function setFilter(f) {
-      currentFilter = f;
-      document.querySelectorAll('.filter-button').forEach(btn=>btn.classList.remove('active'));
-      document.querySelector(`.filter-button[onclick*="setFilter('${f}')"]`).classList.add('active');
-      renderScanner();
+    function renderWatchlist() {
+      const cont = document.getElementById('watchlistContent');
+      if (watchlist.length === 0) {
+        cont.innerHTML = '<p>Keine Aktien in der Beobachtungsliste.</p>';
+        return;
+      }
+      cont.innerHTML = watchlist.map(symbol => `
+        <div class="tile">
+          <h3>${symbol}</h3>
+          <p>Daten lokal gespeichert. Aktualisierung im Scanner.</p>
+        </div>`).join('');
     }
 
-    function berechneCRV(tp1, einstieg, sl) {
-      return ((tp1 - einstieg)/(einstieg - sl)).toFixed(2);
-    }
-
-    function generiereKachel(e) {
-      if (!e.kurs) return '';
-      const crv = berechneCRV(e.tp1||e.kurs, e.einstieg||e.kurs, e.sl||e.kurs);
-      let score = 0;
-      if (e.peg < 1) score++;
-      if (e.revenueGrowth > 0.1) score++;
-      if (e.analystBuyRatio >= 0.5) score++;
-      if (e.sma50 > e.sma200) score++;
-      let status = 'warn', label = 'Abwarten';
-      if (score >= 3) { status='good'; label='Lukrativ'; }
-      else if (score >= 2) { status='watch'; label='Beobachten'; }
-      if (currentFilter !== 'all' && status !== currentFilter) return '';
-      return `
-      <div class="tile">
-        <h3>${e.aktie}</h3>
-        <div>Kurs: ${e.kurs} €</div>
-        <div>PEG: ${e.peg?.toFixed(2) || '-'} | Growth: ${(e.revenueGrowth*100).toFixed(1)}%</div>
-        <div>BuyRatio: ${(e.analystBuyRatio*100).toFixed(0)}% | SMA50: ${e.sma50?.toFixed(2) } | SMA200: ${e.sma200?.toFixed(2)}</div>
-        <div class="score-${status}">Empfehlung: ${label}</div>
-      </div>`;
-    }
-
-    function renderScanner() {
-      const cont = document.getElementById('scannerContent');
-      cont.innerHTML = daten.map(generiereKachel).join('') || '<p>Keine passenden Aktien.</p>';
-      feather.replace();
-    }
-
-    window.onload = renderScanner;
+    window.onload = renderWatchlist;
   </script>
 </body>
 </html>
