@@ -104,8 +104,8 @@
   <nav id="navMenu">
     <div class="menu-item"><a href="index.html"><i data-feather="home"></i> Home</a></div>
     <div class="menu-item"><a href="verwaltung.html"><i data-feather="folder"></i> Verwaltung</a></div>
-    <div class="menu-item"><a href="aktien-scanner.html" class="active"><i data-feather="search"></i> Scanner</a></div>
-    <div class="menu-item"><a href="beobachtungsliste.html"><i data-feather="eye"></i> Beobachtungsliste</a></div>
+    <div class="menu-item"><a href="aktien-scanner.html"><i data-feather="search"></i> Scanner</a></div>
+    <div class="menu-item"><a href="beobachtungsliste.html" class="active"><i data-feather="eye"></i> Beobachtungsliste</a></div>
   </nav>
 
   <div class="filter-container">
@@ -120,14 +120,13 @@
 
   <script>
     feather.replace();
-    const daten = [
-      { aktie: "Apple" }, { aktie: "Microsoft" }, { aktie: "Tesla" }, { aktie: "Amazon" },
-      { aktie: "NVIDIA" }, { aktie: "Alphabet" }, { aktie: "Meta" }, { aktie: "SAP" },
-      { aktie: "Siemens" }, { aktie: "Adidas" }, { aktie: "ASML" }, { aktie: "LVMH" },
-      { aktie: "AMD" }, { aktie: "Allianz" }, { aktie: "BMW" }
-    ];
-    let beobachteteAktien = JSON.parse(localStorage.getItem('beobachteteAktien')||'[]');
+    let beobachteteAktien = JSON.parse(localStorage.getItem('beobachteteAktien') || '[]');
+    if (beobachteteAktien.length === 0) {
+      beobachteteAktien = ["MSFT", "AAPL", "XIACF", "BKNG", "MSTR", "NVDA"];
+      localStorage.setItem('beobachteteAktien', JSON.stringify(beobachteteAktien));
+    }
     let currentFilter = 'all';
+    const daten = beobachteteAktien.map(symbol => ({ aktie: symbol }));
 
     document.getElementById('loadDataBtn').addEventListener('click', loadAllData);
 
@@ -143,10 +142,7 @@
           const res = await fetch(url);
           const json = await res.json();
           const r = json.quoteSummary?.result?.[0];
-          if (!r) {
-            console.warn('Keine Daten für', e.aktie);
-            return;
-          }
+          if (!r) return;
           e.kurs = r.price.regularMarketPrice.raw;
           e.peg = r.financialData.pegRatio.raw;
           e.revenueGrowth = r.financialData.revenueGrowth.raw;
@@ -156,7 +152,7 @@
           e.sma50 = r.summaryDetail.fiftyDayAverage.raw;
           e.sma200 = r.summaryDetail.twoHundredDayAverage.raw;
         } catch(err) {
-          console.error('Fehler für', e.aktie, err);
+          console.error('Fehler bei', e.aktie, err);
         }
       }));
       btn.textContent = 'Daten abrufen';
@@ -187,7 +183,6 @@
       if (score >= 3) { status='good'; label='Lukrativ'; }
       else if (score >= 2) { status='watch'; label='Beobachten'; }
       if (currentFilter !== 'all' && status !== currentFilter) return '';
-      const aktiv = beobachteteAktien.includes(e.aktie);
       return `
       <div class="tile">
         <h3>${e.aktie}</h3>
@@ -195,9 +190,6 @@
         <div>PEG: ${e.peg?.toFixed(2) || '-'} | Growth: ${(e.revenueGrowth*100).toFixed(1)}%</div>
         <div>BuyRatio: ${(e.analystBuyRatio*100).toFixed(0)}% | SMA50: ${e.sma50?.toFixed(2) } | SMA200: ${e.sma200?.toFixed(2)}</div>
         <div class="score-${status}">Empfehlung: ${label}</div>
-        <button class="beobachten-btn ${aktiv?'aktiv':''}" onclick="toggleBeobachtung('${e.aktie}')">
-          ${aktiv?'Deaktivieren':'Beobachten'}
-        </button>
       </div>`;
     }
 
@@ -205,14 +197,6 @@
       const cont = document.getElementById('scannerContent');
       cont.innerHTML = daten.map(generiereKachel).join('') || '<p>Keine passenden Aktien.</p>';
       feather.replace();
-    }
-
-    function toggleBeobachtung(symbol) {
-      const idx = beobachteteAktien.indexOf(symbol);
-      if (idx >= 0) beobachteteAktien.splice(idx, 1);
-      else beobachteteAktien.push(symbol);
-      localStorage.setItem('beobachteteAktien', JSON.stringify(beobachteteAktien));
-      renderScanner();
     }
 
     window.onload = renderScanner;
