@@ -1,0 +1,8 @@
+[
+    { "symbol": "MSFT", "name": "Microsoft" },
+    { "symbol": "AAPL", "name": "Apple" },
+    { "symbol": "XIACF", "name": "Xiaomi" },
+    { "symbol": "BKNG", "name": "Booking Holdings" },
+    { "symbol": "MSTR", "name": "MicroStrategy" },
+    { "symbol": "NVDA", "name": "Nvidia" }
+  ]  

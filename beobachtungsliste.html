@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Beobachtungsliste verwalten</title>
+  <style>
+    body { background: #121212; color: #e0e0e0; font-family: Arial; padding: 20px; }
+    h1 { color: #00e676; }
+    input, button { padding: 8px; margin: 5px; border-radius: 4px; border: none; }
+    input { width: 150px; }
+    button { background: #2e7d32; color: white; cursor: pointer; }
+    button:hover { background: #388e3c; }
+    table { width: 100%; margin-top: 20px; border-collapse: collapse; }
+    th, td { padding: 10px; border: 1px solid #444; }
+    .delete-btn { background: #d32f2f; }
+    .delete-btn:hover { background: #e53935; }
+  </style>
+</head>
+<body>
+  <h1>Beobachtungsliste verwalten</h1>
+  <div>
+    <input type="text" id="symbolInput" placeholder="Symbol (z. B. AAPL)">
+    <input type="text" id="nameInput" placeholder="Name (z. B. Apple)">
+    <button onclick="addEntry()">Hinzufügen</button>
+  </div>
+  <table>
+    <thead>
+      <tr><th>Symbol</th><th>Name</th><th>Aktion</th></tr>
+    </thead>
+    <tbody id="listTable"></tbody>
+  </table>
+
+  <script>
+    const listKey = 'beobachtungsliste';
+
+    function loadList() {
+      const data = JSON.parse(localStorage.getItem(listKey) || '[]');
+      const tbody = document.getElementById('listTable');
+      tbody.innerHTML = '';
+      data.forEach((eintrag, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${eintrag.symbol}</td>
+          <td>${eintrag.name}</td>
+          <td><button class="delete-btn" onclick="removeEntry(${index})">Löschen</button></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function addEntry() {
+      const symbol = document.getElementById('symbolInput').value.trim().toUpperCase();
+      const name = document.getElementById('nameInput').value.trim();
+      if (!symbol || !name) return alert("Beide Felder ausfüllen");
+      const list = JSON.parse(localStorage.getItem(listKey) || '[]');
+      list.push({ symbol, name });
+      localStorage.setItem(listKey, JSON.stringify(list));
+      document.getElementById('symbolInput').value = '';
+      document.getElementById('nameInput').value = '';
+      loadList();
+    }
+
+    function removeEntry(index) {
+      const list = JSON.parse(localStorage.getItem(listKey) || '[]');
+      list.splice(index, 1);
+      localStorage.setItem(listKey, JSON.stringify(list));
+      loadList();
+    }
+
+    loadList();
+  </script>
+</body>
+</html>
