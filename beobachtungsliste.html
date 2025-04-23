@@ -67,6 +67,33 @@
     .tile:hover {
       transform: translateY(-4px);
     }
+    .remove-btn {
+      margin-top: 10px;
+      padding: 6px 10px;
+      background-color: #c62828;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #addSection {
+      margin-top: 40px;
+      text-align: center;
+    }
+    #addInput {
+      padding: 6px;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+    #addButton {
+      padding: 6px 12px;
+      font-size: 16px;
+      background-color: #2e7d32;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -78,6 +105,11 @@
   </nav>
 
   <div class="content" id="watchlistContent"></div>
+
+  <div id="addSection">
+    <input type="text" id="addInput" placeholder="Symbol eingeben z.B. AAPL">
+    <button id="addButton">Hinzufügen</button>
+  </div>
 
   <script>
     feather.replace();
@@ -97,8 +129,26 @@
         <div class="tile">
           <h3>${symbol}</h3>
           <p>Daten lokal gespeichert. Aktualisierung im Scanner.</p>
+          <button class="remove-btn" onclick="removeFromWatchlist('${symbol}')">Entfernen</button>
         </div>`).join('');
     }
+
+    function removeFromWatchlist(symbol) {
+      watchlist = watchlist.filter(item => item !== symbol);
+      localStorage.setItem('beobachteteAktien', JSON.stringify(watchlist));
+      renderWatchlist();
+    }
+
+    document.getElementById('addButton').addEventListener('click', () => {
+      const input = document.getElementById('addInput');
+      const value = input.value.trim().toUpperCase();
+      if (value && !watchlist.includes(value)) {
+        watchlist.push(value);
+        localStorage.setItem('beobachteteAktien', JSON.stringify(watchlist));
+        input.value = '';
+        renderWatchlist();
+      }
+    });
 
     window.onload = renderWatchlist;
   </script>
