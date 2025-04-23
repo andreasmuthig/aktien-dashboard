@@ -6,161 +6,76 @@
   <title>Aktien Scanner</title>
   <script src="https://unpkg.com/feather-icons"></script>
   <style>
-    body {
-      background-color: #121212;
-      color: #e0e0e0;
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-    }
-    #navMenu {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 70px;
-      background: rgba(53,53,53,0.95);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1100;
-    }
+    body { background-color: #121212; color: #e0e0e0; font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+    #navMenu { position: fixed; top: 0; left: 0; width: 100%; height: 70px; background: rgba(53,53,53,0.95); box-shadow: 0 4px 20px rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1100; }
     #navMenu .menu-item { margin: 0 15px; display: flex; align-items: center; gap: 5px; font-size: 16px; }
     #navMenu .menu-item a { color: #e0e0e0; text-decoration: none; padding: 5px 10px; border-radius: 5px; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px; }
     #navMenu .menu-item a.active { background-color: #2e7d32; color: #fff!important; font-weight: bold; box-shadow: 0 0 10px #2e7d32; }
     .filter-container { margin: 80px 0 20px 0; text-align: center; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
     .filter-button { background-color: rgba(255,255,255,0.05); color: #e0e0e0; border: 1px solid #666; border-radius: 6px; padding: 6px 12px; font-size: 14px; cursor: pointer; transition: background-color 0.3s; }
-    .filter-button.active { background-color: #2e7d32; border-color: #2e7d32; }
     .filter-button:hover { background-color: rgba(255,255,255,0.1); }
-    .content { margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); column-gap:24px; row-gap:24px; box-sizing: border-box; }
+    .content { margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap:24px; }
     .tile { background: rgba(105,93,79,0.9); border-radius:8px; padding:15px; box-shadow:0 2px 4px rgba(0,0,0,0.3); transition:transform 0.2s; }
     .tile:hover { transform: translateY(-4px); }
-    .score-good { color:#00e676; font-weight:bold; }
-    .score-watch { color:#ffd54f; font-weight:bold; }
-    .score-warn { color:#ff5252; font-weight:bold; }
-    .beobachten-btn { margin-top:10px; padding:6px 12px; border:none; border-radius:5px; background-color:#2e7d32; color:white; cursor:pointer; font-size:14px; }
-    .beobachten-btn.aktiv { background-color:#ffab00; }
-    .load-btn { margin-left:10px; background: #0066cc; }
-    #statusMessage { margin-top: 10px; font-size: 14px; text-align: center; }
+    .log { background-color: #222; padding: 10px; margin-top: 10px; border-radius: 5px; font-size: 13px; max-height: 120px; overflow-y: auto; white-space: pre-line; }
   </style>
 </head>
 <body>
   <nav id="navMenu">
-    <div class="menu-item"><a href="index.html"><i data-feather="home"></i> Home</a></div>
-    <div class="menu-item"><a href="verwaltung.html"><i data-feather="folder"></i> Verwaltung</a></div>
-    <div class="menu-item"><a href="aktien-scanner.html" class="active"><i data-feather="search"></i> Scanner</a></div>
+    <div class="menu-item"><a href="#" class="active"><i data-feather="search"></i> Scanner</a></div>
   </nav>
 
   <div class="filter-container">
-    <button class="filter-button active" onclick="setFilter('all')">Alle</button>
-    <button class="filter-button" onclick="setFilter('good')">Lukrativ</button>
-    <button class="filter-button" onclick="setFilter('watch')">Beobachten</button>
-    <button class="filter-button" onclick="setFilter('warn')">Warnung</button>
-    <button class="filter-button load-btn" id="loadDataBtn">Daten abrufen</button>
+    <button class="filter-button" onclick="loadAllData()">Daten abrufen</button>
   </div>
-  <div id="statusMessage"></div>
-  <div class="content" id="scannerContent"></div>
+
+  <div id="scannerContent" class="content"></div>
+  <div class="log" id="log"></div>
 
   <script>
     feather.replace();
-    const apiKey = '20cdd52ee2094c8988a6a466bb41b247'; // Trage hier deinen TwelveData API Key ein
 
-    const daten = [
-      { symbol: "AAPL", name: "Apple Inc." },
-      { symbol: "MSFT", name: "Microsoft Corp." }
-    ];
+    const apiKey = '20cdd52ee2094c8988a6a466bb41b247';
+    const symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA'];
 
-    let beobachteteAktien = JSON.parse(localStorage.getItem('beobachteteAktien')||'[]');
-    let currentFilter = 'all';
-
-    document.getElementById('loadDataBtn').addEventListener('click', loadAllData);
-
-    async function fetchRSI(symbol) {
-      try {
-        const res = await fetch(`https://api.twelvedata.com/rsi?symbol=${symbol}&interval=1day&apikey=${apiKey}`);
-        const json = await res.json();
-        return parseFloat(json?.values?.[0]?.rsi) || null;
-      } catch (e) {
-        console.warn(`RSI Fehler bei ${symbol}`);
-        return null;
-      }
+    function log(msg) {
+      const logDiv = document.getElementById('log');
+      logDiv.textContent += msg + '\n';
+      logDiv.scrollTop = logDiv.scrollHeight;
     }
 
     async function loadAllData() {
-      const btn = document.getElementById('loadDataBtn');
-      const status = document.getElementById('statusMessage');
-      btn.disabled = true;
-      btn.textContent = 'Lade Daten...';
-      status.innerHTML = '';
+      document.getElementById('scannerContent').innerHTML = '';
+      document.getElementById('log').textContent = 'Starte Datenabruf...\n';
 
-      let successCount = 0;
-
-      await Promise.all(daten.map(async e => {
+      for (const symbol of symbols) {
         try {
-          const res = await fetch(`https://api.twelvedata.com/quote?symbol=${e.symbol}&apikey=${apiKey}`);
-          const json = await res.json();
-          if (!json || json.status === "error" || !json.close) {
-            throw new Error(json.message || 'Keine Daten');
+          const priceUrl = `https://api.twelvedata.com/price?symbol=${symbol}&apikey=${apiKey}`;
+          const rsiUrl = `https://api.twelvedata.com/rsi?symbol=${symbol}&interval=1day&apikey=${apiKey}`;
+
+          const [priceRes, rsiRes] = await Promise.all([fetch(priceUrl), fetch(rsiUrl)]);
+          const priceData = await priceRes.json();
+          const rsiData = await rsiRes.json();
+
+          if (priceData.price && rsiData.value) {
+            log(`✅ ${symbol}: Preis = ${priceData.price}, RSI = ${rsiData.value}`);
+            renderTile(symbol, priceData.price, rsiData.value);
+          } else {
+            log(`❌ Fehler bei ${symbol}: ${JSON.stringify(priceData)} | ${JSON.stringify(rsiData)}`);
           }
-          e.kurs = parseFloat(json.close);
-          e.veränderung = parseFloat(json.percent_change);
-          e.rsi = await fetchRSI(e.symbol);
-          successCount++;
         } catch (err) {
-          console.error(`Fehler bei ${e.symbol}:`, err);
-          status.innerHTML += `<div style="color:red;">${e.symbol}: Fehler – ${err.message}</div>`;
+          log(`❌ Ausnahme bei ${symbol}: ${err}`);
         }
-      }));
-
-      btn.textContent = 'Daten abrufen';
-      btn.disabled = false;
-      status.innerHTML += `<div style="color:lightgreen;">${successCount} von ${daten.length} erfolgreich geladen</div>`;
-      renderScanner();
+      }
     }
 
-    function setFilter(f) {
-      currentFilter = f;
-      document.querySelectorAll('.filter-button').forEach(btn=>btn.classList.remove('active'));
-      document.querySelector(`.filter-button[onclick*="setFilter('${f}')"]`).classList.add('active');
-      renderScanner();
+    function renderTile(symbol, price, rsi) {
+      const container = document.getElementById('scannerContent');
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      tile.innerHTML = `<h3>${symbol}</h3><p>Preis: ${price} $</p><p>RSI: ${parseFloat(rsi).toFixed(2)}</p>`;
+      container.appendChild(tile);
     }
-
-    function generiereKachel(e) {
-      if (!e.kurs) return '';
-      let status = 'warn', label = 'Abwarten';
-      if (e.rsi < 30) { status = 'good'; label = 'Lukrativ'; }
-      else if (e.rsi < 50) { status = 'watch'; label = 'Beobachten'; }
-      if (currentFilter !== 'all' && status !== currentFilter) return '';
-      const aktiv = beobachteteAktien.includes(e.symbol);
-      return `
-        <div class="tile">
-          <h3>${e.symbol} – ${e.name}</h3>
-          <div>Preis: ${e.kurs} $</div>
-          <div>Veränderung: ${e.veränderung} %</div>
-          <div>RSI: ${e.rsi}</div>
-          <div class="score-${status}">Empfehlung: ${label}</div>
-          <button class="beobachten-btn ${aktiv?'aktiv':''}" onclick="toggleBeobachtung('${e.symbol}')">
-            ${aktiv?'Deaktivieren':'Beobachten'}
-          </button>
-        </div>`;
-    }
-
-    function renderScanner() {
-      const cont = document.getElementById('scannerContent');
-      cont.innerHTML = daten.map(generiereKachel).join('') || '<p>Keine passenden Aktien.</p>';
-      feather.replace();
-    }
-
-    function toggleBeobachtung(symbol) {
-      const idx = beobachteteAktien.indexOf(symbol);
-      if (idx >= 0) beobachteteAktien.splice(idx, 1);
-      else beobachteteAktien.push(symbol);
-      localStorage.setItem('beobachteteAktien', JSON.stringify(beobachteteAktien));
-      renderScanner();
-    }
-
-    window.onload = renderScanner;
   </script>
 </body>
 </html>
