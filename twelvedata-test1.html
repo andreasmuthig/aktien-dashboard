@@ -42,6 +42,7 @@
     .beobachten-btn { margin-top:10px; padding:6px 12px; border:none; border-radius:5px; background-color:#2e7d32; color:white; cursor:pointer; font-size:14px; }
     .beobachten-btn.aktiv { background-color:#ffab00; }
     .load-btn { margin-left:10px; background: #0066cc; }
+    #statusMessage { margin-top: 10px; font-size: 14px; text-align: center; }
   </style>
 </head>
 <body>
@@ -58,45 +59,63 @@
     <button class="filter-button" onclick="setFilter('warn')">Warnung</button>
     <button class="filter-button load-btn" id="loadDataBtn">Daten abrufen</button>
   </div>
-
+  <div id="statusMessage"></div>
   <div class="content" id="scannerContent"></div>
 
   <script>
     feather.replace();
+    const apiKey = '20cdd52ee2094c8988a6a466bb41b247'; // Trage hier deinen TwelveData API Key ein
+
     const daten = [
-      { aktie: "Apple" }, { aktie: "Microsoft" }
+      { symbol: "AAPL", name: "Apple Inc." },
+      { symbol: "MSFT", name: "Microsoft Corp." }
     ];
+
     let beobachteteAktien = JSON.parse(localStorage.getItem('beobachteteAktien')||'[]');
     let currentFilter = 'all';
 
     document.getElementById('loadDataBtn').addEventListener('click', loadAllData);
 
+    async function fetchRSI(symbol) {
+      try {
+        const res = await fetch(`https://api.twelvedata.com/rsi?symbol=${symbol}&interval=1day&apikey=${apiKey}`);
+        const json = await res.json();
+        return parseFloat(json?.values?.[0]?.rsi) || null;
+      } catch (e) {
+        console.warn(`RSI Fehler bei ${symbol}`);
+        return null;
+      }
+    }
+
     async function loadAllData() {
       const btn = document.getElementById('loadDataBtn');
+      const status = document.getElementById('statusMessage');
       btn.disabled = true;
       btn.textContent = 'Lade Daten...';
-      const apiKey = '20cdd52ee2094c8988a6a466bb41b247';
+      status.innerHTML = '';
+
+      let successCount = 0;
+
       await Promise.all(daten.map(async e => {
         try {
-          const symbol = e.aktie === 'Apple' ? 'AAPL' : e.aktie === 'Microsoft' ? 'MSFT' : '';
-          const endpoint = `https://api.twelvedata.com/quote?symbol=${symbol}&apikey=${apiKey}`;
-          const rsiEndpoint = `https://api.twelvedata.com/rsi?symbol=${symbol}&interval=1day&apikey=${apiKey}`;
-          const res = await fetch(endpoint);
-          const data = await res.json();
-          const rsiRes = await fetch(rsiEndpoint);
-          const rsiData = await rsiRes.json();
-
-          if (!data || !data.price) return;
-
-          e.kurs = parseFloat(data.price);
-          e.veraenderung = parseFloat(data.percent_change);
-          e.rsi = parseFloat(rsiData.value);
-        } catch(err) {
-          console.error('Fehler für', e.aktie, err);
+          const res = await fetch(`https://api.twelvedata.com/quote?symbol=${e.symbol}&apikey=${apiKey}`);
+          const json = await res.json();
+          if (!json || json.status === "error" || !json.close) {
+            throw new Error(json.message || 'Keine Daten');
+          }
+          e.kurs = parseFloat(json.close);
+          e.veränderung = parseFloat(json.percent_change);
+          e.rsi = await fetchRSI(e.symbol);
+          successCount++;
+        } catch (err) {
+          console.error(`Fehler bei ${e.symbol}:`, err);
+          status.innerHTML += `<div style="color:red;">${e.symbol}: Fehler – ${err.message}</div>`;
         }
       }));
+
       btn.textContent = 'Daten abrufen';
       btn.disabled = false;
+      status.innerHTML += `<div style="color:lightgreen;">${successCount} von ${daten.length} erfolgreich geladen</div>`;
       renderScanner();
     }
 
@@ -110,34 +129,35 @@
     function generiereKachel(e) {
       if (!e.kurs) return '';
       let status = 'warn', label = 'Abwarten';
-      if (e.rsi < 30) { status = 'good'; label = 'Kauf'; }
+      if (e.rsi < 30) { status = 'good'; label = 'Lukrativ'; }
       else if (e.rsi < 50) { status = 'watch'; label = 'Beobachten'; }
-      const aktiv = beobachteteAktien.includes(e.aktie);
+      if (currentFilter !== 'all' && status !== currentFilter) return '';
+      const aktiv = beobachteteAktien.includes(e.symbol);
       return `
-      <div class="tile">
-        <h3>${e.aktie}</h3>
-        <div>Preis: ${e.kurs.toFixed(2)} $</div>
-        <div>Veränderung: ${e.veraenderung.toFixed(5)} %</div>
-        <div>RSI: ${e.rsi}</div>
-        <div class="score-${status}">Empfehlung: ${label}</div>
-        <button class="beobachten-btn ${aktiv?'aktiv':''}" onclick="toggleBeobachtung('${e.aktie}')">
-          ${aktiv?'Deaktivieren':'Beobachten'}
-        </button>
-      </div>`;
-    }
-
-    function toggleBeobachtung(name) {
-      const i = beobachteteAktien.indexOf(name);
-      if (i >= 0) beobachteteAktien.splice(i,1);
-      else beobachteteAktien.push(name);
-      localStorage.setItem('beobachteteAktien', JSON.stringify(beobachteteAktien));
-      renderScanner();
+        <div class="tile">
+          <h3>${e.symbol} – ${e.name}</h3>
+          <div>Preis: ${e.kurs} $</div>
+          <div>Veränderung: ${e.veränderung} %</div>
+          <div>RSI: ${e.rsi}</div>
+          <div class="score-${status}">Empfehlung: ${label}</div>
+          <button class="beobachten-btn ${aktiv?'aktiv':''}" onclick="toggleBeobachtung('${e.symbol}')">
+            ${aktiv?'Deaktivieren':'Beobachten'}
+          </button>
+        </div>`;
     }
 
     function renderScanner() {
       const cont = document.getElementById('scannerContent');
       cont.innerHTML = daten.map(generiereKachel).join('') || '<p>Keine passenden Aktien.</p>';
       feather.replace();
+    }
+
+    function toggleBeobachtung(symbol) {
+      const idx = beobachteteAktien.indexOf(symbol);
+      if (idx >= 0) beobachteteAktien.splice(idx, 1);
+      else beobachteteAktien.push(symbol);
+      localStorage.setItem('beobachteteAktien', JSON.stringify(beobachteteAktien));
+      renderScanner();
     }
 
     window.onload = renderScanner;
