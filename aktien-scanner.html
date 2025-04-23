@@ -35,64 +35,98 @@
 
   <script>
     feather.replace();
-    const apiKey = '20cdd52ee2094c8988a6a466bb41b247'; // Bitte deinen TwelveData API-Key hier eintragen
-    const beobachteteAktien = JSON.parse(localStorage.getItem('beobachteteAktien') || '[]');
+    const apiKey = '20cdd52ee2094c8988a6a466bb41b247'; // Hier TwelveData API-Key eintragen
+
+    // Initiale Zuordnung Name ↔ Symbol
+    const initialBeobachten = [
+      { name: 'Microsoft', symbol: 'MSFT' },
+      { name: 'Apple', symbol: 'AAPL' },
+      { name: 'Xiaomi', symbol: 'XIACF' },
+      { name: 'Booking Holdings', symbol: 'BKNG' },
+      { name: 'MicroStrategy', symbol: 'MSTR' },
+      { name: 'Nvidia', symbol: 'NVDA' }
+    ];
+
+    // Beobachtete Aktien aus localStorage laden bzw. initial befüllen
+    let beobachtung = JSON.parse(localStorage.getItem('beobachtung'));
+    if (!Array.isArray(beobachtung)) {
+      beobachtung = initialBeobachten.slice();
+      localStorage.setItem('beobachtung', JSON.stringify(beobachtung));
+    }
+
+    // Kursdaten mit Zeitstempel
     let kursdaten = JSON.parse(localStorage.getItem('kursdaten') || '{}');
 
-    // Funktion zum Abruf eines Preises
+    // Fetch mit Fehler-Logging
     async function fetchPrice(symbol) {
       try {
         const res = await fetch(`https://api.twelvedata.com/price?symbol=${symbol}&apikey=${apiKey}`);
         const data = await res.json();
-        return data.price || null;
-      } catch { return null; }
+        if (data.status === 'error') {
+          console.warn(`⚠️ TwelveData-Fehler für ${symbol}:`, data.message);
+          return null;
+        }
+        return data.price ?? null;
+      } catch (err) {
+        console.error(`🚨 Netzwerk-Fehler für ${symbol}:`, err);
+        return null;
+      }
     }
 
+    // Daten aktualisieren (bei Klick oder bei leerer DB)
     async function updateData() {
       const info = document.getElementById('infoBox');
       info.textContent = 'Lade Daten...';
-      for (const symbol of beobachteteAktien) {
-        const preis = await fetchPrice(symbol);
-        if (preis) {
-          kursdaten[symbol] = { preis, zeit: new Date().toLocaleTimeString() };
+      for (const akt of beobachtung) {
+        const price = await fetchPrice(akt.symbol);
+        if (price !== null) {
+          kursdaten[akt.symbol] = { price, time: new Date().toLocaleTimeString() };
         }
+        // kleine Pause um Rate-Limit zu schonen
+        await new Promise(r => setTimeout(r, 250));
       }
       localStorage.setItem('kursdaten', JSON.stringify(kursdaten));
       info.textContent = 'Letzte Aktualisierung: ' + new Date().toLocaleTimeString();
       renderScanner();
     }
 
-    function generiereKachel(symbol) {
-      const daten = kursdaten[symbol];
-      if (!daten) return `
-        <div class="tile">
-          <h3>${symbol}</h3>
-          <p class="info-box">Keine lokalen Daten vorhanden.</p>
-        </div>`;
+    // Kachel-Generator
+    function generiereKachel(akt) {
+      const key = akt.symbol;
+      const data = kursdaten[key];
+      if (!data) {
+        return `
+          <div class="tile">
+            <h3>${akt.name} (${key})</h3>
+            <p class="info-box">Keine lokalen Daten vorhanden.</p>
+          </div>`;
+      }
       return `
         <div class="tile">
-          <h3>${symbol}</h3>
-          <div>Kurs: ${daten.preis}</div>
-          <div>Letztes Update: ${daten.zeit}</div>
+          <h3>${akt.name} (${key})</h3>
+          <div>Kurs: ${data.price} €</div>
+          <div>Letztes Update: ${data.time}</div>
         </div>`;
     }
 
+    // Renderer
     function renderScanner() {
       const cont = document.getElementById('scannerContent');
-      if (beobachteteAktien.length === 0) {
+      if (beobachtung.length === 0) {
         document.getElementById('infoBox').innerHTML =
-          '⚠️ Keine beobachteten Aktien vorhanden. Bitte öffne die <a href="beobachtungsliste.html">Beobachtungsliste</a>.';
+          '⚠️ Keine beobachteten Aktien. Bitte öffne die <a href="beobachtungsliste.html">Beobachtungsliste</a>.';
         cont.innerHTML = '';
         return;
       }
       document.getElementById('infoBox').textContent = '';
-      cont.innerHTML = beobachteteAktien.map(generiereKachel).join('');
+      cont.innerHTML = beobachtung.map(generiereKachel).join('');
     }
 
     document.getElementById('loadDataBtn').addEventListener('click', updateData);
     window.onload = () => {
       renderScanner();
-      if (!beobachteteAktien.some(sym => kursdaten[sym])) {
+      // falls keine Einträge in kursdaten existieren
+      if (!beobachtung.some(a => kursdaten[a.symbol])) {
         updateData();
       }
     };
