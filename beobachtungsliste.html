@@ -11,7 +11,7 @@
       color: #e0e0e0;
       font-family: Arial, sans-serif;
       margin: 0;
-      padding: 20px;
+      padding-top: 90px;
     }
     #navMenu {
       position: fixed;
@@ -26,154 +26,75 @@
       justify-content: center;
       z-index: 1100;
     }
-    #navMenu .menu-item {
-      margin: 0 15px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 16px;
-    }
-    #navMenu .menu-item a {
-      color: #e0e0e0;
-      text-decoration: none;
-      padding: 5px 10px;
-      border-radius: 5px;
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    #navMenu .menu-item a.active {
-      background-color: #2e7d32;
-      color: #fff!important;
-      font-weight: bold;
-      box-shadow: 0 0 10px #2e7d32;
-    }
-    .table-wrapper {
-      margin-top: 100px;
-      max-width: 800px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background-color: rgba(105,93,79,0.9);
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    th, td {
-      padding: 12px;
-      text-align: left;
-      border-bottom: 1px solid #444;
-    }
-    th {
-      background-color: #2e7d32;
-      color: white;
-    }
-    tr:hover {
-      background-color: rgba(255,255,255,0.05);
-    }
-    .remove-btn {
-      padding: 6px 10px;
-      background-color: #c62828;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    #addSection {
-      margin-top: 20px;
-      text-align: center;
-    }
-    #addInput {
-      padding: 6px;
-      font-size: 16px;
-      margin-right: 10px;
-    }
-    #addButton {
-      padding: 6px 12px;
-      font-size: 16px;
-      background-color: #2e7d32;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
+    #navMenu .menu-item { margin: 0 15px; display: flex; align-items: center; gap: 5px; font-size: 16px; }
+    #navMenu .menu-item a { color: #e0e0e0; text-decoration: none; padding: 5px 10px; border-radius: 5px; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px; }
+    #navMenu .menu-item a.active { background-color: #2e7d32; color: #fff!important; font-weight: bold; box-shadow: 0 0 10px #2e7d32; }
+    .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+    .entry { background: #2b2b2b; margin-bottom: 10px; padding: 10px 15px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+    .entry span { font-size: 16px; }
+    .entry button { background: #ff5252; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+    .input-row { display: flex; gap: 10px; margin-bottom: 20px; }
+    .input-row input { flex: 1; padding: 8px; border-radius: 5px; border: 1px solid #444; background: #1e1e1e; color: white; }
+    .input-row button { background: #2e7d32; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; }
   </style>
 </head>
 <body>
   <nav id="navMenu">
     <div class="menu-item"><a href="index.html"><i data-feather="home"></i> Home</a></div>
     <div class="menu-item"><a href="verwaltung.html"><i data-feather="folder"></i> Verwaltung</a></div>
+    <div class="menu-item"><a href="beobachtungsliste.html" class="active"><i data-feather="eye"></i> Beobachtung</a></div>
     <div class="menu-item"><a href="aktien-scanner.html"><i data-feather="search"></i> Scanner</a></div>
-    <div class="menu-item"><a href="beobachtungsliste.html" class="active"><i data-feather="eye"></i> Beobachtungsliste</a></div>
   </nav>
 
-  <div class="table-wrapper">
-    <table>
-      <thead>
-        <tr>
-          <th>Symbol</th>
-          <th>Aktion</th>
-        </tr>
-      </thead>
-      <tbody id="watchlistTableBody">
-      </tbody>
-    </table>
-  </div>
-
-  <div id="addSection">
-    <input type="text" id="addInput" placeholder="Symbol eingeben z.B. AAPL">
-    <button id="addButton">Hinzufügen</button>
+  <div class="container">
+    <div class="input-row">
+      <input type="text" id="symbol" placeholder="Symbol z. B. AAPL">
+      <input type="text" id="name" placeholder="Name z. B. Apple">
+      <button onclick="hinzufuegen()">Hinzufügen</button>
+    </div>
+    <div id="liste"></div>
   </div>
 
   <script>
     feather.replace();
-    let watchlist = JSON.parse(localStorage.getItem('beobachteteAktien') || '[]');
-    if (watchlist.length === 0) {
-      watchlist = ["MSFT", "AAPL", "XIACF", "BKNG", "MSTR", "NVDA"];
-      localStorage.setItem('beobachteteAktien', JSON.stringify(watchlist));
+    let beobachtung = JSON.parse(localStorage.getItem("beobachtung") || "[]");
+
+    function speichere() {
+      localStorage.setItem("beobachtung", JSON.stringify(beobachtung));
+      zeigeListe();
     }
 
-    function renderWatchlist() {
-      const tbody = document.getElementById('watchlistTableBody');
-      tbody.innerHTML = '';
-      if (watchlist.length === 0) {
-        const row = document.createElement('tr');
-        row.innerHTML = '<td colspan="2">Keine Aktien in der Beobachtungsliste.</td>';
-        tbody.appendChild(row);
+    function hinzufuegen() {
+      const symbol = document.getElementById("symbol").value.trim().toUpperCase();
+      const name = document.getElementById("name").value.trim();
+      if (!symbol || !name) return alert("Bitte Symbol und Name eingeben.");
+      if (beobachtung.find(e => e.symbol === symbol)) return alert("Diese Aktie ist bereits in der Liste.");
+      beobachtung.push({ symbol, name });
+      speichere();
+      document.getElementById("symbol").value = '';
+      document.getElementById("name").value = '';
+    }
+
+    function entfernen(symbol) {
+      beobachtung = beobachtung.filter(e => e.symbol !== symbol);
+      speichere();
+    }
+
+    function zeigeListe() {
+      const container = document.getElementById("liste");
+      if (beobachtung.length === 0) {
+        container.innerHTML = "<p>Keine Aktien in der Beobachtungsliste.</p>";
         return;
       }
-      watchlist.forEach(symbol => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${symbol}</td>
-          <td><button class="remove-btn" onclick="removeFromWatchlist('${symbol}')">Entfernen</button></td>
-        `;
-        tbody.appendChild(row);
-      });
+      container.innerHTML = beobachtung.map(e => `
+        <div class="entry">
+          <span><strong>${e.symbol}</strong> – ${e.name}</span>
+          <button onclick="entfernen('${e.symbol}')">Entfernen</button>
+        </div>
+      `).join('');
     }
 
-    function removeFromWatchlist(symbol) {
-      watchlist = watchlist.filter(item => item !== symbol);
-      localStorage.setItem('beobachteteAktien', JSON.stringify(watchlist));
-      renderWatchlist();
-    }
-
-    document.getElementById('addButton').addEventListener('click', () => {
-      const input = document.getElementById('addInput');
-      const value = input.value.trim().toUpperCase();
-      if (value && !watchlist.includes(value)) {
-        watchlist.push(value);
-        localStorage.setItem('beobachteteAktien', JSON.stringify(watchlist));
-        input.value = '';
-        renderWatchlist();
-      }
-    });
-
-    window.onload = renderWatchlist;
+    window.onload = zeigeListe;
   </script>
 </body>
 </html>
