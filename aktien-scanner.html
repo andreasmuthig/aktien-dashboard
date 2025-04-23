@@ -64,6 +64,23 @@
     .score-good { color: #00e676; font-weight: bold; }
     .score-watch { color: #ffd54f; font-weight: bold; }
     .score-warn { color: #ff5252; font-weight: bold; }
+    .info-box {
+      text-align: center;
+      margin-top: 40px;
+      font-size: 16px;
+      color: #aaa;
+    }
+    .reload-btn {
+      display: block;
+      margin: 20px auto 0;
+      padding: 8px 16px;
+      background-color: #2e7d32;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -75,6 +92,7 @@
   </nav>
 
   <div class="content" id="scannerContent"></div>
+  <div class="info-box" id="infoBox"></div>
 
   <script>
     feather.replace();
@@ -97,11 +115,23 @@
 
     function renderScanner() {
       const cont = document.getElementById("scannerContent");
+      const infoBox = document.getElementById("infoBox");
+
       if (beobachteteAktien.length === 0) {
-        cont.innerHTML = '<p>Keine beobachteten Aktien vorhanden.</p>';
+        cont.innerHTML = '';
+        infoBox.innerHTML = '<p>⚠️ Keine beobachteten Aktien vorhanden.<br>Bitte öffne die <a href="beobachtungsliste.html">Beobachtungsliste</a> und füge Aktien hinzu.</p>';
         return;
       }
-      cont.innerHTML = beobachteteAktien.map(generiereKachel).join('');
+
+      const kacheln = beobachteteAktien.map(generiereKachel).filter(Boolean);
+
+      if (kacheln.length === 0) {
+        cont.innerHTML = '';
+        infoBox.innerHTML = '<p>📉 Es wurden keine Kursdaten gefunden. Bitte rufe zuerst die Daten in der <a href="beobachtungsliste.html">Beobachtungsliste</a> ab.</p><button class="reload-btn" onclick="window.location.reload()">Seite neu laden</button>';
+      } else {
+        infoBox.innerHTML = '';
+        cont.innerHTML = kacheln.join('');
+      }
     }
 
     window.onload = renderScanner;
