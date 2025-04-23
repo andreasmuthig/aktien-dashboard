@@ -49,26 +49,33 @@
       font-weight: bold;
       box-shadow: 0 0 10px #2e7d32;
     }
-    .content {
+    .table-wrapper {
       margin-top: 100px;
-      display: grid;
-      grid-template-columns: repeat(auto-fill,minmax(280px,1fr));
-      column-gap:24px;
-      row-gap:24px;
-      box-sizing: border-box;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
     }
-    .tile {
-      background: rgba(105,93,79,0.9);
-      border-radius:8px;
-      padding:15px;
-      box-shadow:0 2px 4px rgba(0,0,0,0.3);
-      transition:transform 0.2s;
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: rgba(105,93,79,0.9);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      border-radius: 8px;
+      overflow: hidden;
     }
-    .tile:hover {
-      transform: translateY(-4px);
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #444;
+    }
+    th {
+      background-color: #2e7d32;
+      color: white;
+    }
+    tr:hover {
+      background-color: rgba(255,255,255,0.05);
     }
     .remove-btn {
-      margin-top: 10px;
       padding: 6px 10px;
       background-color: #c62828;
       color: white;
@@ -77,7 +84,7 @@
       cursor: pointer;
     }
     #addSection {
-      margin-top: 40px;
+      margin-top: 20px;
       text-align: center;
     }
     #addInput {
@@ -104,7 +111,18 @@
     <div class="menu-item"><a href="beobachtungsliste.html" class="active"><i data-feather="eye"></i> Beobachtungsliste</a></div>
   </nav>
 
-  <div class="content" id="watchlistContent"></div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Symbol</th>
+          <th>Aktion</th>
+        </tr>
+      </thead>
+      <tbody id="watchlistTableBody">
+      </tbody>
+    </table>
+  </div>
 
   <div id="addSection">
     <input type="text" id="addInput" placeholder="Symbol eingeben z.B. AAPL">
@@ -120,17 +138,22 @@
     }
 
     function renderWatchlist() {
-      const cont = document.getElementById('watchlistContent');
+      const tbody = document.getElementById('watchlistTableBody');
+      tbody.innerHTML = '';
       if (watchlist.length === 0) {
-        cont.innerHTML = '<p>Keine Aktien in der Beobachtungsliste.</p>';
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="2">Keine Aktien in der Beobachtungsliste.</td>';
+        tbody.appendChild(row);
         return;
       }
-      cont.innerHTML = watchlist.map(symbol => `
-        <div class="tile">
-          <h3>${symbol}</h3>
-          <p>Daten lokal gespeichert. Aktualisierung im Scanner.</p>
-          <button class="remove-btn" onclick="removeFromWatchlist('${symbol}')">Entfernen</button>
-        </div>`).join('');
+      watchlist.forEach(symbol => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${symbol}</td>
+          <td><button class="remove-btn" onclick="removeFromWatchlist('${symbol}')">Entfernen</button></td>
+        `;
+        tbody.appendChild(row);
+      });
     }
 
     function removeFromWatchlist(symbol) {
