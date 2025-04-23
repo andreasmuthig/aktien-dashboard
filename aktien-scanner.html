@@ -37,27 +37,12 @@
     feather.replace();
     const apiKey = '20cdd52ee2094c8988a6a466bb41b247'; // Hier TwelveData API-Key eintragen
 
-    // Initiale Zuordnung Name ↔ Symbol
-    const initialBeobachten = [
-      { name: 'Microsoft', symbol: 'MSFT' },
-      { name: 'Apple', symbol: 'AAPL' },
-      { name: 'Xiaomi', symbol: 'XIACF' },
-      { name: 'Booking Holdings', symbol: 'BKNG' },
-      { name: 'MicroStrategy', symbol: 'MSTR' },
-      { name: 'Nvidia', symbol: 'NVDA' }
-    ];
-
-    // Beobachtete Aktien aus localStorage laden bzw. initial befüllen
-    let beobachtung = JSON.parse(localStorage.getItem('beobachtung'));
-    if (!Array.isArray(beobachtung)) {
-      beobachtung = initialBeobachten.slice();
-      localStorage.setItem('beobachtung', JSON.stringify(beobachtung));
-    }
+    // Beobachtete Aktien aus localStorage laden
+    let beobachtung = JSON.parse(localStorage.getItem('beobachtung') || '[]');
 
     // Kursdaten mit Zeitstempel
     let kursdaten = JSON.parse(localStorage.getItem('kursdaten') || '{}');
 
-    // Fetch mit Fehler-Logging
     async function fetchPrice(symbol) {
       try {
         const res = await fetch(`https://api.twelvedata.com/price?symbol=${symbol}&apikey=${apiKey}`);
@@ -73,7 +58,6 @@
       }
     }
 
-    // Daten aktualisieren (bei Klick oder bei leerer DB)
     async function updateData() {
       const info = document.getElementById('infoBox');
       info.textContent = 'Lade Daten...';
@@ -82,7 +66,6 @@
         if (price !== null) {
           kursdaten[akt.symbol] = { price, time: new Date().toLocaleTimeString() };
         }
-        // kleine Pause um Rate-Limit zu schonen
         await new Promise(r => setTimeout(r, 250));
       }
       localStorage.setItem('kursdaten', JSON.stringify(kursdaten));
@@ -90,7 +73,6 @@
       renderScanner();
     }
 
-    // Kachel-Generator
     function generiereKachel(akt) {
       const key = akt.symbol;
       const data = kursdaten[key];
@@ -109,7 +91,6 @@
         </div>`;
     }
 
-    // Renderer
     function renderScanner() {
       const cont = document.getElementById('scannerContent');
       if (beobachtung.length === 0) {
@@ -125,7 +106,6 @@
     document.getElementById('loadDataBtn').addEventListener('click', updateData);
     window.onload = () => {
       renderScanner();
-      // falls keine Einträge in kursdaten existieren
       if (!beobachtung.some(a => kursdaten[a.symbol])) {
         updateData();
       }
