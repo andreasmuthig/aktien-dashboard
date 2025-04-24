@@ -32,12 +32,24 @@
     .info-box { text-align: center; margin-top: 20px; font-size: 18px; }
     .content { margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap: 20px; padding: 0 20px; }
     .tile { background: rgba(105,93,79,0.9); border-radius:8px; padding:15px; box-shadow:0 2px 4px rgba(0,0,0,0.3); transition: none; }
+    .tile.besitz { border-left: 6px solid #2e7d32; }
+    .tile.beobachtung { border-left: 6px solid #ffab00; }
     .timestamp { margin-top: 10px; font-size: 12px; color: #999; text-align: center; }
     .load-btn { background-color: #2e7d32; color: white; padding: 8px 14px; border: none; border-radius: 5px; cursor: pointer; margin: 20px auto; display: block; }
     .load-btn:disabled { background-color: #555; cursor: not-allowed; }
     .error-msg { color: #ff5252; text-align: center; margin-top: 10px; font-size: 14px; }
     .warn-msg { color: #ffd54f; font-size: 12px; text-align: center; margin-top: 5px; }
     .status-indikator { text-align: center; font-size: 14px; margin-top: 10px; color: #90caf9; }
+    .toggle-typ-btn {
+      background-color: #555;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      font-size: 12px;
+      padding: 4px 8px;
+      cursor: pointer;
+      margin-top: 8px;
+    }
   </style>
 </head>
 <body>
@@ -61,22 +73,23 @@
     const loadBtn = document.getElementById("loadBtn");
     const apiKey = "DEIN_API_KEY_HIER";
 
-    let beobachtung = JSON.parse(localStorage.getItem("aktienliste") || "[]").filter(e => e.typ === "Beobachtung");
+    let alleAktien = JSON.parse(localStorage.getItem("aktienliste") || "[]");
+    let beobachtung = alleAktien;
     let kursCache = JSON.parse(localStorage.getItem("kurse") || "{}");
 
     function prüfeVerbindung() {
       if (!Array.isArray(beobachtung)) {
-        statusCheck.innerText = "❌ Fehler: Beobachtungsliste ist kein gültiges Array.";
+        statusCheck.innerText = "❌ Fehler: Aktienliste ist kein gültiges Array.";
       } else if (beobachtung.length === 0) {
-        statusCheck.innerText = "ℹ️ Beobachtungsliste ist leer.";
+        statusCheck.innerText = "ℹ️ Es sind keine Aktien in der Liste.";
       } else {
-        statusCheck.innerText = `✅ ${beobachtung.length} Einträge in der Beobachtungsliste geladen.`;
+        statusCheck.innerText = `✅ ${beobachtung.length} Einträge in der Liste geladen.`;
       }
     }
 
     async function ladeDaten() {
       if (!Array.isArray(beobachtung) || beobachtung.length === 0) {
-        content.innerHTML = "<p class='info-box'>Keine Aktien in der Beobachtungsliste.</p>";
+        content.innerHTML = "<p class='info-box'>Keine Aktien vorhanden.</p>";
         return;
       }
       loadBtn.disabled = true;
@@ -97,7 +110,8 @@
           updates[aktie.symbol] = {
             name: aktie.name,
             price: parseFloat(data.price),
-            timestamp: now
+            timestamp: now,
+            typ: aktie.typ
           };
         } catch (err) {
           console.error("Fehler bei", aktie.symbol, err);
@@ -105,7 +119,8 @@
             name: aktie.name,
             price: null,
             error: err.message,
-            timestamp: now
+            timestamp: now,
+            typ: aktie.typ
           };
         }
         if ((i+1) % 3 === 0) await delay(3000);
@@ -118,10 +133,20 @@
       loadBtn.textContent = "Daten abrufen";
     }
 
+    function toggleTyp(symbol) {
+      const index = alleAktien.findIndex(e => e.symbol === symbol);
+      if (index !== -1) {
+        alleAktien[index].typ = alleAktien[index].typ === 'Besitz' ? 'Beobachtung' : 'Besitz';
+        localStorage.setItem("aktienliste", JSON.stringify(alleAktien));
+        beobachtung = alleAktien;
+        zeigeDaten();
+      }
+    }
+
     function zeigeDaten() {
       const now = new Date().getTime();
       if (!kursCache || Object.keys(kursCache).length === 0) {
-        infoBox.innerText = "Es wurden keine Kursdaten gefunden. Bitte rufe zuerst die Daten in der Beobachtungsliste ab.";
+        infoBox.innerText = "Es wurden keine Kursdaten gefunden. Bitte rufe zuerst die Daten ab.";
         return;
       }
       const eintraege = beobachtung.map(e => {
@@ -129,11 +154,15 @@
         if (!d) return '';
         const altMinuten = Math.floor((now - d.timestamp) / 60000);
         const warnung = altMinuten > 20 ? `<div class='warn-msg'>⚠️ Daten älter als 20 Minuten</div>` : "";
-        return `<div class="tile">
+        const tileClass = `tile ${e.typ === 'Besitz' ? 'besitz' : 'beobachtung'}`;
+        return `<div class="${tileClass}">
           <h3>${d.name || e.symbol}</h3>
           <p>${d.price ? `Kurs: ${d.price} USD` : `<span class='error-msg'>❌ ${d.error || 'Fehlerhafte Daten'}</span>`}</p>
           <p class="timestamp">Datenalter: ${altMinuten} min</p>
           ${warnung}
+          <button class="toggle-typ-btn" onclick="toggleTyp('${e.symbol}')">
+            Zu ${e.typ === 'Besitz' ? 'Beobachtung' : 'Besitz'} wechseln
+          </button>
         </div>`;
       }).join('');
       content.innerHTML = eintraege;
