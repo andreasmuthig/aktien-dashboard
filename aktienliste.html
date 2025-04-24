@@ -3,107 +3,151 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aktienliste verwalten</title>
+  <title>Aktien Scanner</title>
   <script src="https://unpkg.com/feather-icons"></script>
   <style>
-    body { background: #121212; color: #eee; font-family: Arial, sans-serif; margin: 0; padding-top: 90px; }
+    body {
+      background-color: #121212;
+      color: #e0e0e0;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding-top: 90px;
+    }
     #navMenu {
-      position: fixed; top: 0; left: 0; width: 100%; height: 70px;
-      background: rgba(53,53,53,0.95); display: flex;
-      align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(0,0,0,0.8); z-index: 1000;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 70px;
+      background: rgba(53,53,53,0.95);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1100;
     }
     #navMenu .menu-item { margin: 0 15px; display: flex; align-items: center; gap: 5px; font-size: 16px; }
-    #navMenu .menu-item a {
-      color: #e0e0e0; text-decoration: none; padding: 5px 10px;
-      border-radius: 5px; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px;
-    }
-    #navMenu .menu-item a.active {
-      background-color: #2e7d32; color: #fff!important;
-      font-weight: bold; box-shadow: 0 0 10px #2e7d32;
-    }
-    .container { max-width: 1000px; margin: 30px auto; padding: 20px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { padding: 10px; border-bottom: 1px solid #444; }
-    th { background: #333; text-align: left; }
-    input, select {
-      padding: 6px 10px; background: #222; border: 1px solid #555;
-      color: #fff; border-radius: 4px; font-size: 14px;
-    }
-    button {
-      background: #2e7d32; color: #fff; padding: 6px 12px;
-      border: none; border-radius: 5px; cursor: pointer;
-    }
-    .btn-del { background: #c62828; margin-left: 5px; }
+    #navMenu .menu-item a { color: #e0e0e0; text-decoration: none; padding: 5px 10px; border-radius: 5px; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px; }
+    #navMenu .menu-item a.active { background-color: #2e7d32; color: #fff!important; font-weight: bold; box-shadow: 0 0 10px #2e7d32; }
+    .info-box { text-align: center; margin-top: 20px; font-size: 18px; }
+    .content { margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap: 20px; padding: 0 20px; }
+    .tile { background: rgba(105,93,79,0.9); border-radius:8px; padding:15px; box-shadow:0 2px 4px rgba(0,0,0,0.3); transition: none; }
+    .timestamp { margin-top: 10px; font-size: 12px; color: #999; text-align: center; }
+    .load-btn { background-color: #2e7d32; color: white; padding: 8px 14px; border: none; border-radius: 5px; cursor: pointer; margin: 20px auto; display: block; }
+    .load-btn:disabled { background-color: #555; cursor: not-allowed; }
+    .error-msg { color: #ff5252; text-align: center; margin-top: 10px; font-size: 14px; }
+    .warn-msg { color: #ffd54f; font-size: 12px; text-align: center; margin-top: 5px; }
+    .status-indikator { text-align: center; font-size: 14px; margin-top: 10px; color: #90caf9; }
   </style>
 </head>
 <body>
   <nav id="navMenu">
     <div class="menu-item"><a href="index.html"><i data-feather="home"></i> Home</a></div>
-    <div class="menu-item"><a href="aktienliste.html" class="active"><i data-feather="list"></i> Aktienliste</a></div>
-    <div class="menu-item"><a href="aktien-scanner.html"><i data-feather="search"></i> Scanner</a></div>
+    <div class="menu-item"><a href="verwaltung.html"><i data-feather="folder"></i> Verwaltung</a></div>
+    <div class="menu-item"><a href="beobachtungsliste.html"><i data-feather="eye"></i> Beobachtung</a></div>
+    <div class="menu-item"><a href="aktien-scanner.html" class="active"><i data-feather="search"></i> Scanner</a></div>
   </nav>
 
-  <div class="container">
-    <h2>Aktien verwalten</h2>
-    <form id="form">
-      <input id="symbol" placeholder="Symbol" required>
-      <input id="name" placeholder="Name" required>
-      <select id="typ">
-        <option value="besitz">Besitz</option>
-        <option value="beobachtung">Beobachtung</option>
-      </select>
-      <button type="submit">Hinzufügen</button>
-    </form>
-    <table>
-      <thead>
-        <tr><th>Symbol</th><th>Name</th><th>Typ</th><th>Aktion</th></tr>
-      </thead>
-      <tbody id="aktienTabelle"></tbody>
-    </table>
-  </div>
+  <div class="timestamp" id="infoBox"></div>
+  <div class="status-indikator" id="statusCheck"></div>
+  <button class="load-btn" id="loadBtn" onclick="ladeDaten()">Daten abrufen</button>
+  <div class="content" id="scannerContent"></div>
 
   <script>
     feather.replace();
+    const content = document.getElementById("scannerContent");
+    const infoBox = document.getElementById("infoBox");
+    const statusCheck = document.getElementById("statusCheck");
+    const loadBtn = document.getElementById("loadBtn");
+    const apiKey = "DEIN_API_KEY_HIER";
 
-    let aktien = JSON.parse(localStorage.getItem("aktienListe") || "[]");
+    let beobachtung = JSON.parse(localStorage.getItem("aktienliste") || "[]").filter(e => e.typ === "Beobachtung");
+    let kursCache = JSON.parse(localStorage.getItem("kurse") || "{}");
 
-    function speichern() {
-      localStorage.setItem("aktienListe", JSON.stringify(aktien));
+    function prüfeVerbindung() {
+      if (!Array.isArray(beobachtung)) {
+        statusCheck.innerText = "❌ Fehler: Beobachtungsliste ist kein gültiges Array.";
+      } else if (beobachtung.length === 0) {
+        statusCheck.innerText = "ℹ️ Beobachtungsliste ist leer.";
+      } else {
+        statusCheck.innerText = `✅ ${beobachtung.length} Einträge in der Beobachtungsliste geladen.`;
+      }
     }
 
-    function renderTabelle() {
-      const tbody = document.getElementById("aktienTabelle");
-      tbody.innerHTML = aktien.map((e, i) => `
-        <tr>
-          <td>${e.symbol}</td>
-          <td>${e.name}</td>
-          <td>${e.typ}</td>
-          <td>
-            <button class="btn-del" onclick="entfernen(${i})">Löschen</button>
-          </td>
-        </tr>
-      `).join('');
+    async function ladeDaten() {
+      if (!Array.isArray(beobachtung) || beobachtung.length === 0) {
+        content.innerHTML = "<p class='info-box'>Keine Aktien in der Beobachtungsliste.</p>";
+        return;
+      }
+      loadBtn.disabled = true;
+      loadBtn.textContent = "Lade...";
+
+      const now = new Date().getTime();
+      const updates = {};
+      const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+      for (let i = 0; i < beobachtung.length; i++) {
+        const aktie = beobachtung[i];
+        try {
+          if (!aktie || !aktie.symbol || !aktie.name) continue;
+          const endpoint = `https://api.twelvedata.com/quote?symbol=${aktie.symbol}&apikey=${apiKey}`;
+          const res = await fetch(endpoint);
+          const data = await res.json();
+          if (!data || !data.price || data.status === "error") throw new Error(data.message || "Fehlerhafte Daten");
+          updates[aktie.symbol] = {
+            name: aktie.name,
+            price: parseFloat(data.price),
+            timestamp: now
+          };
+        } catch (err) {
+          console.error("Fehler bei", aktie.symbol, err);
+          updates[aktie.symbol] = {
+            name: aktie.name,
+            price: null,
+            error: err.message,
+            timestamp: now
+          };
+        }
+        if ((i+1) % 3 === 0) await delay(3000);
+      }
+
+      kursCache = updates;
+      localStorage.setItem("kurse", JSON.stringify(updates));
+      zeigeDaten();
+      loadBtn.disabled = false;
+      loadBtn.textContent = "Daten abrufen";
     }
 
-    function entfernen(index) {
-      aktien.splice(index, 1);
-      speichern();
-      renderTabelle();
+    function zeigeDaten() {
+      const now = new Date().getTime();
+      if (!kursCache || Object.keys(kursCache).length === 0) {
+        infoBox.innerText = "Es wurden keine Kursdaten gefunden. Bitte rufe zuerst die Daten in der Beobachtungsliste ab.";
+        return;
+      }
+      const eintraege = beobachtung.map(e => {
+        const d = kursCache[e.symbol];
+        if (!d) return '';
+        const altMinuten = Math.floor((now - d.timestamp) / 60000);
+        const warnung = altMinuten > 20 ? `<div class='warn-msg'>⚠️ Daten älter als 20 Minuten</div>` : "";
+        return `<div class="tile">
+          <h3>${d.name || e.symbol}</h3>
+          <p>${d.price ? `Kurs: ${d.price} USD` : `<span class='error-msg'>❌ ${d.error || 'Fehlerhafte Daten'}</span>`}</p>
+          <p class="timestamp">Datenalter: ${altMinuten} min</p>
+          ${warnung}
+        </div>`;
+      }).join('');
+      content.innerHTML = eintraege;
+      infoBox.innerText = "Letzte Aktualisierung: " + new Date().toLocaleTimeString();
     }
 
-    document.getElementById("form").addEventListener("submit", e => {
-      e.preventDefault();
-      const symbol = document.getElementById("symbol").value.trim().toUpperCase();
-      const name = document.getElementById("name").value.trim();
-      const typ = document.getElementById("typ").value;
-      if (!symbol || !name) return;
-      aktien.push({ symbol, name, typ });
-      speichern();
-      renderTabelle();
-      e.target.reset();
-    });
-
-    renderTabelle();
+    window.onload = () => {
+      prüfeVerbindung();
+      if (!kursCache || Object.keys(kursCache).length === 0) {
+        ladeDaten();
+      } else {
+        zeigeDaten();
+      }
+    }
   </script>
 </body>
 </html>
