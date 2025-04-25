@@ -73,7 +73,15 @@
     const loadBtn = document.getElementById("loadBtn");
     const apiKey = "DEIN_API_KEY_HIER";
 
-    let alleAktien = JSON.parse(localStorage.getItem("aktienliste") || "[]");
+    let alleAktien = JSON.parse(localStorage.getItem("aktienliste") || "null");
+
+    if (!alleAktien || alleAktien.length === 0) {
+      const beobachtet = JSON.parse(localStorage.getItem("beobachteteAktien") || "[]").map(s => ({ symbol: s, name: s, typ: "Beobachtung" }));
+      const verwaltet = JSON.parse(localStorage.getItem("verwalteteAktien") || "[]").map(s => ({ symbol: s, name: s, typ: "Besitz" }));
+      alleAktien = [...beobachtet, ...verwaltet];
+      localStorage.setItem("aktienliste", JSON.stringify(alleAktien));
+    }
+
     let beobachtung = alleAktien;
     let kursCache = JSON.parse(localStorage.getItem("kurse") || "{}");
 
