@@ -1,8 +1,9 @@
+
 [
-    { "name": "Microsoft", "symbol": "MSFT", "besitz": true },
-    { "name": "Apple", "symbol": "AAPL", "besitz": true },
-    { "name": "Xiaomi", "symbol": "XIACF", "besitz": false },
-    { "name": "Booking Holdings", "symbol": "BKNG", "besitz": false },
-    { "name": "MicroStrategy", "symbol": "MSTR", "besitz": false },
-    { "name": "Nvidia", "symbol": "NVDA", "besitz": true }
+    { "symbol": "AAPL", "name": "Apple", "besitz": true },
+    { "symbol": "MSFT", "name": "Microsoft", "besitz": true },
+    { "symbol": "XIACF", "name": "Xiaomi", "besitz": false },
+    { "symbol": "BKNG", "name": "Booking Holdings", "besitz": false },
+    { "symbol": "MSTR", "name": "MicroStrategy", "besitz": false },
+    { "symbol": "NVDA", "name": "Nvidia", "besitz": false }
   ]  
