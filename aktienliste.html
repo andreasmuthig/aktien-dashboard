@@ -11,7 +11,7 @@
       color: #e0e0e0;
       font-family: Arial, sans-serif;
       margin: 0;
-      padding-top: 90px;
+      padding: 20px;
     }
     #navMenu {
       position: fixed;
@@ -26,29 +26,74 @@
       justify-content: center;
       z-index: 1100;
     }
-    #navMenu .menu-item { margin: 0 15px; display: flex; align-items: center; gap: 5px; font-size: 16px; }
-    #navMenu .menu-item a { color: #e0e0e0; text-decoration: none; padding: 5px 10px; border-radius: 5px; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px; }
-    #navMenu .menu-item a.active { background-color: #2e7d32; color: #fff!important; font-weight: bold; box-shadow: 0 0 10px #2e7d32; }
-    .info-box { text-align: center; margin-top: 20px; font-size: 18px; }
-    .content { margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap: 20px; padding: 0 20px; }
-    .tile { background: rgba(105,93,79,0.9); border-radius:8px; padding:15px; box-shadow:0 2px 4px rgba(0,0,0,0.3); transition: none; }
-    .tile.besitz { border-left: 6px solid #2e7d32; }
-    .tile.beobachtung { border-left: 6px solid #ffab00; }
-    .timestamp { margin-top: 10px; font-size: 12px; color: #999; text-align: center; }
-    .load-btn { background-color: #2e7d32; color: white; padding: 8px 14px; border: none; border-radius: 5px; cursor: pointer; margin: 20px auto; display: block; }
-    .load-btn:disabled { background-color: #555; cursor: not-allowed; }
-    .error-msg { color: #ff5252; text-align: center; margin-top: 10px; font-size: 14px; }
-    .warn-msg { color: #ffd54f; font-size: 12px; text-align: center; margin-top: 5px; }
-    .status-indikator { text-align: center; font-size: 14px; margin-top: 10px; color: #90caf9; }
-    .toggle-typ-btn {
-      background-color: #555;
-      border: none;
+    #navMenu .menu-item {
+      margin: 0 15px;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    #navMenu .menu-item a {
+      color: #e0e0e0;
+      text-decoration: none;
+      padding: 5px 10px;
       border-radius: 5px;
-      color: white;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    #navMenu .menu-item a.active {
+      background-color: #2e7d32;
+      color: #fff!important;
+      font-weight: bold;
+      box-shadow: 0 0 10px #2e7d32;
+    }
+    .content {
+      margin-top: 90px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill,minmax(280px,1fr));
+      gap: 20px;
+    }
+    .tile {
+      background: rgba(105,93,79,0.9);
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      position: relative;
+      transition: none;
+    }
+    .label-besitz {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: #2e7d32;
+      padding: 3px 7px;
+      border-radius: 4px;
       font-size: 12px;
-      padding: 4px 8px;
+      color: white;
+    }
+    .label-beobachten {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: #2962ff;
+      padding: 3px 7px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: white;
+    }
+    .score-good { color: #00e676; font-weight: bold; }
+    .score-watch { color: #ffd54f; font-weight: bold; }
+    .score-warn { color: #ff5252; font-weight: bold; }
+    .load-btn {
+      margin-bottom: 20px;
+      padding: 8px 16px;
+      background: #0066cc;
+      border: none;
+      border-radius: 6px;
+      color: white;
       cursor: pointer;
-      margin-top: 8px;
     }
   </style>
 </head>
@@ -56,133 +101,77 @@
   <nav id="navMenu">
     <div class="menu-item"><a href="index.html"><i data-feather="home"></i> Home</a></div>
     <div class="menu-item"><a href="verwaltung.html"><i data-feather="folder"></i> Verwaltung</a></div>
-    <div class="menu-item"><a href="beobachtungsliste.html"><i data-feather="eye"></i> Beobachtung</a></div>
-    <div class="menu-item"><a href="aktien-scanner.html" class="active"><i data-feather="search"></i> Scanner</a></div>
+    <div class="menu-item"><a href="scanner.html" class="active"><i data-feather="search"></i> Scanner</a></div>
   </nav>
 
-  <div class="timestamp" id="infoBox"></div>
-  <div class="status-indikator" id="statusCheck"></div>
-  <button class="load-btn" id="loadBtn" onclick="ladeDaten()">Daten abrufen</button>
+  <div style="margin-top:90px;text-align:center;">
+    <button id="loadButton" class="load-btn">Daten abrufen</button>
+  </div>
+
   <div class="content" id="scannerContent"></div>
 
   <script>
     feather.replace();
-    const content = document.getElementById("scannerContent");
-    const infoBox = document.getElementById("infoBox");
-    const statusCheck = document.getElementById("statusCheck");
-    const loadBtn = document.getElementById("loadBtn");
-    const apiKey = "20cdd52ee2094c8988a6a466bb41b247";
 
-    let alleAktien = JSON.parse(localStorage.getItem("aktienliste") || "null");
-
-    if (!alleAktien || alleAktien.length === 0) {
-      const beobachtet = JSON.parse(localStorage.getItem("beobachteteAktien") || "[]").map(s => ({ symbol: s, name: s, typ: "Beobachtung" }));
-      const verwaltet = JSON.parse(localStorage.getItem("verwalteteAktien") || "[]").map(s => ({ symbol: s, name: s, typ: "Besitz" }));
-      alleAktien = [...beobachtet, ...verwaltet];
-      localStorage.setItem("aktienliste", JSON.stringify(alleAktien));
+    async function ladeBeobachtenListe() {
+      const res = await fetch('beobachten_verwalten_liste.json');
+      const daten = await res.json();
+      return daten;
     }
 
-    let beobachtung = alleAktien;
-    let kursCache = JSON.parse(localStorage.getItem("kurse") || "{}");
-
-    function prüfeVerbindung() {
-      if (!Array.isArray(beobachtung)) {
-        statusCheck.innerText = "❌ Fehler: Aktienliste ist kein gültiges Array.";
-      } else if (beobachtung.length === 0) {
-        statusCheck.innerText = "ℹ️ Es sind keine Aktien in der Liste.";
-      } else {
-        statusCheck.innerText = `✅ ${beobachtung.length} Einträge in der Liste geladen.`;
-      }
+    async function ladeDaten(symbol) {
+      const apiKey = '20cdd52ee2094c8988a6a466bb41b247'; // <<< API Key hier einsetzen
+      const url = `https://api.twelvedata.com/quote?symbol=${symbol}&apikey=${apiKey}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      return data;
     }
 
-    async function ladeDaten() {
-      if (!Array.isArray(beobachtung) || beobachtung.length === 0) {
-        content.innerHTML = "<p class='info-box'>Keine Aktien vorhanden.</p>";
-        return;
-      }
-      loadBtn.disabled = true;
-      loadBtn.textContent = "Lade...";
+    function generiereTile(aktie) {
+      if (!aktie.kurs) return '';
+      const labelClass = aktie.besitz ? 'label-besitz' : 'label-beobachten';
+      const labelText = aktie.besitz ? 'Besitz' : 'Beobachtung';
+      return `
+        <div class="tile">
+          <div class="${labelClass}">${labelText}</div>
+          <h3>${aktie.name}</h3>
+          <div>Kurs: ${aktie.kurs} USD</div>
+          <div>Veränderung: ${aktie.veraenderung}%</div>
+        </div>
+      `;
+    }
 
-      const now = new Date().getTime();
-      const updates = {};
-      const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-      for (let i = 0; i < beobachtung.length; i++) {
-        const aktie = beobachtung[i];
+    async function ladeUndRenderDaten() {
+      document.getElementById('scannerContent').innerHTML = '<p>Daten werden geladen...</p>';
+      const liste = await ladeBeobachtenListe();
+      const daten = await Promise.all(liste.map(async aktie => {
         try {
-          if (!aktie || !aktie.symbol || !aktie.name) continue;
-          const endpoint = `https://api.twelvedata.com/quote?symbol=${aktie.symbol}&apikey=${apiKey}`;
-          const res = await fetch(endpoint);
-          const data = await res.json();
-          if (!data || !data.price || data.status === "error") throw new Error(data.message || "Fehlerhafte Daten");
-          updates[aktie.symbol] = {
-            name: aktie.name,
-            price: parseFloat(data.price),
-            timestamp: now,
-            typ: aktie.typ
-          };
-        } catch (err) {
-          console.error("Fehler bei", aktie.symbol, err);
-          updates[aktie.symbol] = {
-            name: aktie.name,
-            price: null,
-            error: err.message,
-            timestamp: now,
-            typ: aktie.typ
-          };
+          const data = await ladeDaten(aktie.symbol);
+          if (data.price) {
+            return {
+              name: aktie.name,
+              symbol: aktie.symbol,
+              besitz: aktie.besitz,
+              kurs: parseFloat(data.price).toFixed(2),
+              veraenderung: parseFloat(data.percent_change).toFixed(2)
+            };
+          }
+        } catch (e) {
+          console.error('Fehler bei', aktie.symbol, e);
         }
-        if ((i+1) % 3 === 0) await delay(3000);
-      }
+        return null;
+      }));
 
-      kursCache = { ...kursCache, ...updates };
-      localStorage.setItem("kurse", JSON.stringify(kursCache));
-      zeigeDaten();
-      loadBtn.disabled = false;
-      loadBtn.textContent = "Daten abrufen";
-    }
+      const gueltigeDaten = daten.filter(d => d !== null);
 
-    function toggleTyp(symbol) {
-      const index = alleAktien.findIndex(e => e.symbol === symbol);
-      if (index !== -1) {
-        alleAktien[index].typ = alleAktien[index].typ === 'Besitz' ? 'Beobachtung' : 'Besitz';
-        localStorage.setItem("aktienliste", JSON.stringify(alleAktien));
-        beobachtung = alleAktien;
-        zeigeDaten();
+      if (gueltigeDaten.length > 0) {
+        document.getElementById('scannerContent').innerHTML = gueltigeDaten.map(generiereTile).join('');
+      } else {
+        document.getElementById('scannerContent').innerHTML = '<p>Keine Daten geladen.</p>';
       }
     }
 
-    function zeigeDaten() {
-      const now = new Date().getTime();
-      if (!kursCache || Object.keys(kursCache).length === 0) {
-        infoBox.innerText = "Es wurden keine Kursdaten gefunden. Bitte rufe zuerst die Daten ab.";
-        return;
-      }
-      const eintraege = beobachtung.map(e => {
-        const d = kursCache[e.symbol];
-        if (!d) return '';
-        const altMinuten = Math.floor((now - d.timestamp) / 60000);
-        const warnung = altMinuten > 20 ? `<div class='warn-msg'>⚠️ Daten älter als 20 Minuten</div>` : "";
-        const tileClass = `tile ${e.typ === 'Besitz' ? 'besitz' : 'beobachtung'}`;
-        return `<div class="${tileClass}">
-          <h3>${d.name || e.symbol}</h3>
-          <p>${d.price ? `Kurs: ${d.price} USD` : `<span class='error-msg'>❌ ${d.error || 'Fehlerhafte Daten'}</span>`}</p>
-          <p class="timestamp">Datenalter: ${altMinuten} min</p>
-          ${warnung}
-          <button class="toggle-typ-btn" onclick="toggleTyp('${e.symbol}')">
-            Zu ${e.typ === 'Besitz' ? 'Beobachtung' : 'Besitz'} wechseln
-          </button>
-        </div>`;
-      }).join('');
-      content.innerHTML = eintraege;
-      infoBox.innerText = "Letzte Aktualisierung: " + new Date().toLocaleTimeString();
-    }
-
-    window.onload = () => {
-      prüfeVerbindung();
-      zeigeDaten();
-      const letzte = Math.max(...Object.values(kursCache).map(d => d.timestamp || 0));
-      if (Date.now() - letzte > 20 * 60000) ladeDaten();
-    }
+    document.getElementById('loadButton').addEventListener('click', ladeUndRenderDaten);
   </script>
 </body>
 </html>
