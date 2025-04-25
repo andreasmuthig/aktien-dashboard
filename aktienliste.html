@@ -134,8 +134,8 @@
         if ((i+1) % 3 === 0) await delay(3000);
       }
 
-      kursCache = updates;
-      localStorage.setItem("kurse", JSON.stringify(updates));
+      kursCache = { ...kursCache, ...updates };
+      localStorage.setItem("kurse", JSON.stringify(kursCache));
       zeigeDaten();
       loadBtn.disabled = false;
       loadBtn.textContent = "Daten abrufen";
@@ -179,11 +179,9 @@
 
     window.onload = () => {
       prüfeVerbindung();
-      if (!kursCache || Object.keys(kursCache).length === 0) {
-        ladeDaten();
-      } else {
-        zeigeDaten();
-      }
+      zeigeDaten();
+      const letzte = Math.max(...Object.values(kursCache).map(d => d.timestamp || 0));
+      if (Date.now() - letzte > 20 * 60000) ladeDaten();
     }
   </script>
 </body>
