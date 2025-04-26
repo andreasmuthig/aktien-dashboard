@@ -8,25 +8,22 @@ const localStorageKey = 'aktien_scanner_data';
 const jsonURL = 'https://raw.githubusercontent.com/andreasmuthig/aktien-dashboard/main/beobachten_verwalten_liste.json';
 let daten = [];
 
-// Event-Bindings erst nach DOM ready
-document.addEventListener('DOMContentLoaded', () => {
-  // Filter-Buttons
+document.addEventListener('DOMContentLoaded', init);
+
+function init() {
+  // 1) Buttons binden
   document.querySelectorAll('.filter-buttons button[data-filter]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      setFilter(btn.dataset.filter);
-    });
+    btn.addEventListener('click', () => setFilter(btn.dataset.filter));
   });
-  // Cache-Zeit-Buttons
   document.querySelectorAll('.cache-buttons button[data-cache]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      setCacheTime(parseInt(btn.dataset.cache, 10));
-    });
+    btn.addEventListener('click', () => setCacheTime(parseInt(btn.dataset.cache, 10)));
   });
-  // Manueller Refresh
   document.getElementById('loadButton').addEventListener('click', () => ladeDaten(true));
-  // Initiale Button-Markierung
+
+  // 2) Initiale Button-Stati
   updateButtonStates();
-  // Wenn schon Cache da ist, sofort anzeigen
+
+  // 3) Cache anzeigen (falls vorhanden)
   const cache = JSON.parse(localStorage.getItem(localStorageKey)) || {};
   if (cache.data && cache.data.length) {
     daten = cache.data;
@@ -34,16 +31,19 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('lastUpdate').textContent =
       `Letzte Aktualisierung (Cache): ${new Date(cache.timestamp).toLocaleTimeString()}`;
   }
-  // und direkt loslegen (ohne Force liefert evtl. Cache, falls sauber)
+
+  // 4) Erste Abfrage
   ladeDaten(false);
-});
+}
 
 function updateButtonStates() {
   document.querySelectorAll('.filter-buttons button[data-filter]').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.filter === filter);
   });
   document.querySelectorAll('.cache-buttons button[data-cache]').forEach(btn => {
-    btn.classList.toggle('active', parseInt(btn.dataset.cache,10) === cacheTimeMinutes);
+    btn.classList.toggle('active',
+      parseInt(btn.dataset.cache, 10) === cacheTimeMinutes
+    );
   });
 }
 
@@ -58,20 +58,18 @@ function setCacheTime(min) {
   updateButtonStates();
 }
 
-// Lade Daten, force=true um Cache zu umgehen
 async function ladeDaten(force = false) {
-  console.log(`ladeDaten(force=${force}) – Cache-Zeit: ${cacheTimeMinutes} Min`);
+  console.log(`ladeDaten(force=${force}) – CacheTime=${cacheTimeMinutes}min`);
   const cache = JSON.parse(localStorage.getItem(localStorageKey)) || {};
-  const jetzt = Date.now();
-  const cacheAlter = cache.timestamp ? (jetzt - cache.timestamp) / 60000 : Infinity;
+  const now = Date.now();
+  const age = cache.timestamp ? (now - cache.timestamp) / 60000 : Infinity;
 
-  // Prüfe, ob Cache vollständig gültig ist
-  const cacheVollstaendig = Array.isArray(cache.data) &&
-    cache.data.length > 0 &&
-    cache.data.every(d => typeof d.kurs === 'number' && !isNaN(d.kurs));
+  // Cache nur verwenden, wenn vollständig gültig und nicht ge-forced
+  const cacheValid = Array.isArray(cache.data) &&
+    cache.data.every(d => typeof d.kurs === 'number');
 
-  if (!force && cacheVollstaendig && cacheAlter < cacheTimeMinutes) {
-    console.log(`Verwende gültigen Cache (Alter: ${cacheAlter.toFixed(1)} Min)`);
+  if (!force && cacheValid && age < cacheTimeMinutes) {
+    console.log(`Nutze Cache (Alter ${age.toFixed(1)}min)`);
     daten = cache.data;
     render();
     document.getElementById('lastUpdate').textContent =
@@ -80,16 +78,17 @@ async function ladeDaten(force = false) {
   }
 
   try {
-    console.log('Hole Beobachtungs-Liste…');
+    console.log('Hole Aktie-Liste von GitHub…');
     const res = await fetch(jsonURL);
     if (!res.ok) throw new Error(`Liste HTTP ${res.status}`);
     const liste = await res.json();
 
+    // Parallel alle Anfragen, mit URL-Encoding
     daten = await Promise.all(liste.map(async aktie => {
       try {
-        const r = await fetch(
-          `https://api.twelvedata.com/quote?symbol=${aktie.symbol}&apikey=${API_KEY}`
-        );
+        const symbolEncoded = encodeURIComponent(aktie.symbol);
+        const apiUrl = `https://api.twelvedata.com/quote?symbol=${symbolEncoded}&apikey=${API_KEY}`;
+        const r = await fetch(apiUrl);
         const j = await r.json();
         if (j.status === 'error' || !j.price) {
           console.warn(`Keine Daten für ${aktie.symbol}`);
@@ -103,37 +102,37 @@ async function ladeDaten(force = false) {
           veraenderung: parseFloat(j.percent_change)
         };
       } catch (e) {
-        console.error(`Fehler bei ${aktie.symbol}:`, e);
+        console.error(`Fehler bei ${aktie.symbol}`, e);
         return { ...aktie, kurs: null, veraenderung: null };
       }
     }));
 
     // Cache aktualisieren
     localStorage.setItem(localStorageKey, JSON.stringify({
-      timestamp: jetzt,
+      timestamp: now,
       data: daten
     }));
     console.log('API-Daten geholt und gecached');
     render();
     document.getElementById('lastUpdate').textContent =
-      `Letzte Aktualisierung: ${new Date(jetzt).toLocaleTimeString()}`;
+      `Letzte Aktualisierung: ${new Date(now).toLocaleTimeString()}`;
   } catch (e) {
     console.error('Fehler beim Laden:', e);
     document.getElementById('scannerContent').innerHTML =
-      '<p style="text-align:center; color:#ff5252;">Fehler beim Laden der Aktienliste.</p>';
+      '<p style="text-align:center; color:#ff5252;">Fehler beim Laden der Liste.</p>';
   }
 }
 
 function render() {
-  const container = document.getElementById('scannerContent');
+  const c = document.getElementById('scannerContent');
   if (!daten.length) {
-    container.innerHTML = '<p style="text-align:center;">Keine Daten verfügbar.</p>';
+    c.innerHTML = '<p style="text-align:center;">Keine Daten verfügbar.</p>';
     return;
   }
-  container.innerHTML = daten
-    .filter(d => filter === 'all' ||
-      (filter === 'besitz' && d.besitz) ||
-      (filter === 'beobachtung' && !d.besitz)
+  c.innerHTML = daten
+    .filter(d => filter === 'all'
+      || (filter === 'besitz' && d.besitz)
+      || (filter === 'beobachtung' && !d.besitz)
     )
     .map(d => `
       <div class="tile ${d.besitz ? 'green' : 'blue'}">
