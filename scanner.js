@@ -1,6 +1,5 @@
 // scanner.js
 
-// Ersetze alle Feather-Icons
 feather.replace();
 
 let filter = 'all';
@@ -9,73 +8,70 @@ const localStorageKey = 'aktien_scanner_data';
 const jsonURL = 'https://raw.githubusercontent.com/andreasmuthig/aktien-dashboard/main/beobachten_verwalten_liste.json';
 let daten = [];
 
-// Diese Funktion wird nach DOM ready einmal aufgerufen
-function init() {
-  // Filter-Buttons binden
-  document.querySelectorAll('.filter-buttons button').forEach(btn => {
-    const f = btn.dataset.filter;
-    if (!f) return;
-    btn.addEventListener('click', () => setFilter(f));
+// Event-Bindings erst nach DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+  // Filter-Buttons
+  document.querySelectorAll('.filter-buttons button[data-filter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setFilter(btn.dataset.filter);
+    });
   });
-
-  // Cache-Zeit-Buttons binden
-  document.querySelectorAll('.cache-buttons button').forEach(btn => {
-    const c = btn.dataset.cache;
-    if (!c) return;
-    btn.addEventListener('click', () => setCacheTime(parseInt(c, 10)));
+  // Cache-Zeit-Buttons
+  document.querySelectorAll('.cache-buttons button[data-cache]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setCacheTime(parseInt(btn.dataset.cache, 10));
+    });
   });
-
-  // Manuelle Nachladung
-  document.getElementById('loadButton').addEventListener('click', ladeDaten);
-
-  // Initiale Button-Marker
+  // Manueller Refresh
+  document.getElementById('loadButton').addEventListener('click', () => ladeDaten(true));
+  // Initiale Button-Markierung
   updateButtonStates();
-
-  // Wenn Cache da ist, direkt rendern
+  // Wenn schon Cache da ist, sofort anzeigen
   const cache = JSON.parse(localStorage.getItem(localStorageKey)) || {};
-  if (cache.data) {
+  if (cache.data && cache.data.length) {
     daten = cache.data;
     render();
     document.getElementById('lastUpdate').textContent =
       `Letzte Aktualisierung (Cache): ${new Date(cache.timestamp).toLocaleTimeString()}`;
   }
+  // und direkt loslegen (ohne Force liefert evtl. Cache, falls sauber)
+  ladeDaten(false);
+});
 
-  // Und sofort Daten nachladen
-  ladeDaten();
-}
-
-// Markiert die aktiven Buttons visuell
 function updateButtonStates() {
-  document.querySelectorAll('.filter-buttons button').forEach(btn => {
+  document.querySelectorAll('.filter-buttons button[data-filter]').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.filter === filter);
   });
-  document.querySelectorAll('.cache-buttons button').forEach(btn => {
+  document.querySelectorAll('.cache-buttons button[data-cache]').forEach(btn => {
     btn.classList.toggle('active', parseInt(btn.dataset.cache,10) === cacheTimeMinutes);
   });
 }
 
-// Wechselt den Filter und aktualisiert Kacheln
 function setFilter(neu) {
   filter = neu;
   updateButtonStates();
   render();
 }
 
-// Setzt die neue Cache-Zeit (in Minuten)
 function setCacheTime(min) {
   cacheTimeMinutes = min;
   updateButtonStates();
 }
 
-// Lädt Daten mit Cache-Logik
-async function ladeDaten() {
-  console.log(`ladeDaten(): Cache-Zeit ${cacheTimeMinutes} Minuten`);
+// Lade Daten, force=true um Cache zu umgehen
+async function ladeDaten(force = false) {
+  console.log(`ladeDaten(force=${force}) – Cache-Zeit: ${cacheTimeMinutes} Min`);
   const cache = JSON.parse(localStorage.getItem(localStorageKey)) || {};
   const jetzt = Date.now();
   const cacheAlter = cache.timestamp ? (jetzt - cache.timestamp) / 60000 : Infinity;
 
-  if (cache.data && cacheAlter < cacheTimeMinutes) {
-    console.log(`Verwende Cache (Alter: ${cacheAlter.toFixed(1)} Min)`);
+  // Prüfe, ob Cache vollständig gültig ist
+  const cacheVollstaendig = Array.isArray(cache.data) &&
+    cache.data.length > 0 &&
+    cache.data.every(d => typeof d.kurs === 'number' && !isNaN(d.kurs));
+
+  if (!force && cacheVollstaendig && cacheAlter < cacheTimeMinutes) {
+    console.log(`Verwende gültigen Cache (Alter: ${cacheAlter.toFixed(1)} Min)`);
     daten = cache.data;
     render();
     document.getElementById('lastUpdate').textContent =
@@ -84,18 +80,18 @@ async function ladeDaten() {
   }
 
   try {
-    console.log('Hole Beobachtungs-Liste von GitHub…');
+    console.log('Hole Beobachtungs-Liste…');
     const res = await fetch(jsonURL);
     if (!res.ok) throw new Error(`Liste HTTP ${res.status}`);
-    const beobachteteAktien = await res.json();
+    const liste = await res.json();
 
-    // Parallel alle Kurse abfragen
-    daten = await Promise.all(beobachteteAktien.map(async aktie => {
+    daten = await Promise.all(liste.map(async aktie => {
       try {
-        const url = `https://api.twelvedata.com/quote?symbol=${aktie.symbol}&apikey=${API_KEY}`;
-        const r = await fetch(url);
-        const json = await r.json();
-        if (json.status === 'error' || !json.price) {
+        const r = await fetch(
+          `https://api.twelvedata.com/quote?symbol=${aktie.symbol}&apikey=${API_KEY}`
+        );
+        const j = await r.json();
+        if (j.status === 'error' || !j.price) {
           console.warn(`Keine Daten für ${aktie.symbol}`);
           return { ...aktie, kurs: null, veraenderung: null };
         }
@@ -103,34 +99,31 @@ async function ladeDaten() {
           name: aktie.name,
           symbol: aktie.symbol,
           besitz: aktie.besitz,
-          kurs: parseFloat(json.price),
-          veraenderung: parseFloat(json.percent_change)
+          kurs: parseFloat(j.price),
+          veraenderung: parseFloat(j.percent_change)
         };
-      } catch(err) {
-        console.error(`Fehler bei ${aktie.symbol}:`, err);
+      } catch (e) {
+        console.error(`Fehler bei ${aktie.symbol}:`, e);
         return { ...aktie, kurs: null, veraenderung: null };
       }
     }));
 
-    // In Cache speichern
+    // Cache aktualisieren
     localStorage.setItem(localStorageKey, JSON.stringify({
       timestamp: jetzt,
       data: daten
     }));
-
-    console.log('API-Daten geladen und gecached.');
+    console.log('API-Daten geholt und gecached');
     render();
     document.getElementById('lastUpdate').textContent =
       `Letzte Aktualisierung: ${new Date(jetzt).toLocaleTimeString()}`;
-
-  } catch (err) {
-    console.error('Fehler beim Laden der Liste:', err);
+  } catch (e) {
+    console.error('Fehler beim Laden:', e);
     document.getElementById('scannerContent').innerHTML =
-      '<p style="text-align:center;">Fehler beim Laden der Aktienliste.</p>';
+      '<p style="text-align:center; color:#ff5252;">Fehler beim Laden der Aktienliste.</p>';
   }
 }
 
-// Rendert die Kacheln basierend auf Filter und Daten
 function render() {
   const container = document.getElementById('scannerContent');
   if (!daten.length) {
@@ -138,7 +131,10 @@ function render() {
     return;
   }
   container.innerHTML = daten
-    .filter(d => filter === 'all' || (filter === 'besitz' && d.besitz) || (filter === 'beobachtung' && !d.besitz))
+    .filter(d => filter === 'all' ||
+      (filter === 'besitz' && d.besitz) ||
+      (filter === 'beobachtung' && !d.besitz)
+    )
     .map(d => `
       <div class="tile ${d.besitz ? 'green' : 'blue'}">
         <div class="status">${d.besitz ? 'Besitz' : 'Beobachtung'}</div>
@@ -153,6 +149,3 @@ function render() {
       </div>`
     ).join('');
 }
-
-// Starte das Ganze, sobald DOM bereit ist
-document.addEventListener('DOMContentLoaded', init);
