@@ -15,15 +15,15 @@
   </nav>
 
   <div class="filter-buttons">
-    <button onclick="setFilter('all')" class="active">Alle</button>
-    <button onclick="setFilter('besitz')">Besitz</button>
-    <button onclick="setFilter('beobachtung')">Beobachtung</button>
+    <button data-filter="all" class="active">Alle</button>
+    <button data-filter="besitz">Besitz</button>
+    <button data-filter="beobachtung">Beobachtung</button>
   </div>
 
   <div class="cache-buttons">
-    <button onclick="setCacheTime(1)">1 Min</button>
-    <button onclick="setCacheTime(10)" class="active">10 Min</button>
-    <button onclick="setCacheTime(20)">20 Min</button>
+    <button data-cache="1">1 Min</button>
+    <button data-cache="10" class="active">10 Min</button>
+    <button data-cache="20">20 Min</button>
     <button id="loadButton">Daten abrufen</button>
   </div>
 
@@ -34,7 +34,6 @@
   <script>
     const API_KEY = '20cdd52ee2094c8988a6a466bb41b247';
   </script>
-
   <script src="scanner.js"></script>
 </body>
 </html>
