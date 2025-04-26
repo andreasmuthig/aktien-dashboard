@@ -5,7 +5,6 @@ feather.replace();
 let filter = 'all';
 let cacheTimeMinutes = 10;
 const localStorageKey = 'aktien_scanner_data';
-const apiKey = '20cdd52ee2094c8988a6a466bb41b247'; // Dein API-Key
 const jsonURL = 'https://raw.githubusercontent.com/andreasmuthig/aktien-dashboard/main/beobachten_verwalten_liste.json';
 let daten = [];
 
@@ -43,7 +42,7 @@ async function ladeDaten() {
 
     daten = await Promise.all(beobachteteAktien.map(async aktie => {
       try {
-        const url = `https://api.twelvedata.com/quote?symbol=${aktie.symbol}&apikey=${apiKey}`;
+        const url = `https://api.twelvedata.com/quote?symbol=${aktie.symbol}&apikey=${API_KEY}`;
         const res = await fetch(url);
         const json = await res.json();
 
