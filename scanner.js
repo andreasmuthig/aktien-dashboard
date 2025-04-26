@@ -3,9 +3,9 @@
 feather.replace();
 
 let filter = 'all';
-let cacheTimeMinutes = 10; // Standard auf 10 Minuten
+let cacheTimeMinutes = 10;
 const localStorageKey = 'aktien_scanner_data';
-const apiKey = 'DEIN_API_KEY'; // <-- Deinen TwelveData API Key hier einsetzen
+const apiKey = '20cdd52ee2094c8988a6a466bb41b247'; // Dein API-Key
 const jsonURL = 'https://raw.githubusercontent.com/andreasmuthig/aktien-dashboard/main/beobachten_verwalten_liste.json';
 let daten = [];
 
@@ -24,10 +24,9 @@ function setCacheTime(min) {
   document.querySelector(`.cache-buttons button[onclick*="${min}"]`).classList.add('active');
 }
 
-// Daten laden mit Cache-Check
+// Hauptfunktion: Daten laden
 async function ladeDaten() {
   const cache = JSON.parse(localStorage.getItem(localStorageKey)) || {};
-
   const jetzt = Date.now();
   const cacheAlter = cache.timestamp ? (jetzt - cache.timestamp) / 60000 : Infinity;
 
@@ -48,7 +47,16 @@ async function ladeDaten() {
         const res = await fetch(url);
         const json = await res.json();
 
-        if (json.status === 'error' || !json.price) throw new Error('Ungültige Daten');
+        if (json.status === 'error' || !json.price) {
+          console.warn(`Keine gültigen Daten für ${aktie.symbol}`);
+          return {
+            name: aktie.name,
+            symbol: aktie.symbol,
+            besitz: aktie.besitz,
+            kurs: null,
+            veraenderung: null
+          };
+        }
 
         return {
           name: aktie.name,
@@ -59,13 +67,16 @@ async function ladeDaten() {
         };
       } catch (error) {
         console.error('Fehler bei', aktie.symbol, error);
-        return null;
+        return {
+          name: aktie.name,
+          symbol: aktie.symbol,
+          besitz: aktie.besitz,
+          kurs: null,
+          veraenderung: null
+        };
       }
     }));
 
-    daten = daten.filter(d => d !== null);
-
-    // Daten und Zeitstempel speichern
     localStorage.setItem(localStorageKey, JSON.stringify({
       timestamp: jetzt,
       data: daten
@@ -94,14 +105,20 @@ function render() {
       <div class="tile ${d.besitz ? 'green' : 'blue'}">
         <div class="status">${d.besitz ? 'Besitz' : 'Beobachtung'}</div>
         <h3>${d.name}</h3>
-        <div class="kurs">Kurs: ${d.kurs.toFixed(2)} USD</div>
-        <div class="change ${d.veraenderung < 0 ? 'neg' : ''}">Veränderung: ${d.veraenderung.toFixed(2)}%</div>
+        ${
+          d.kurs !== null
+            ? `
+              <div class="kurs">Kurs: ${d.kurs.toFixed(2)} USD</div>
+              <div class="change ${d.veraenderung < 0 ? 'neg' : ''}">Veränderung: ${d.veraenderung.toFixed(2)}%</div>
+              `
+            : `<div class="kurs">❗ Kursdaten nicht verfügbar</div>`
+        }
       </div>
     `)
     .join('');
 }
 
-// Beim ersten Laden schauen, ob Cache da ist
+// Beim ersten Laden Cache prüfen
 window.onload = () => {
   const cache = JSON.parse(localStorage.getItem(localStorageKey)) || {};
   if (cache.data) {
