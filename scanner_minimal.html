@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Minimaler Aktien-Scanner Test</title>
+  <style>
+    body { background: #121212; color: #e0e0e0; font-family: Arial, sans-serif; padding: 20px; }
+    button { margin: 5px; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; }
+    button.active { background: #2e7d32; color: #fff; }
+    .tile { padding: 10px; margin: 5px 0; border: 1px solid #444; }
+  </style>
+</head>
+<body>
+
+  <h2>Einfacher Test</h2>
+  <button id="load">Daten abrufen</button>
+  <div id="output"></div>
+
+  <script>
+    // Feste Liste mit korrekten TwelveData-Symbolen
+    const LISTE = [
+      { symbol: 'NASDAQ:AAPL', name: 'Apple', besitz: true },
+      { symbol: 'NASDAQ:MSFT', name: 'Microsoft', besitz: true },
+      { symbol: 'NASDAQ:BKNG', name: 'Booking', besitz: false },
+      { symbol: 'NASDAQ:MSTR', name: 'MicroStrategy', besitz: false },
+      { symbol: 'NASDAQ:NVDA', name: 'Nvidia', besitz: false }
+    ];
+    const API_KEY = '20cdd52ee2094c8988a6a466bb41b247';
+
+    document.getElementById('load').addEventListener('click', async () => {
+      const container = document.getElementById('output');
+      container.innerHTML = '<p>Hole Daten…</p>';
+      const results = await Promise.all(LISTE.map(async a => {
+        try {
+          const url = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(a.symbol)}&apikey=${API_KEY}`;
+          const res = await fetch(url);
+          const j = await res.json();
+          if (j.status === 'error' || !j.price) throw new Error('keine Daten');
+          return { ...a, kurs: parseFloat(j.price) };
+        } catch {
+          return { ...a, kurs: null };
+        }
+      }));
+
+      container.innerHTML = results.map(r => `
+        <div class="tile">
+          <strong>${r.name}</strong> (${r.symbol})<br>
+          ${r.kurs !== null 
+            ? r.kurs.toFixed(2) + ' USD' 
+            : '<span style="color:#f55;">n/v</span>'}
+        </div>
+      `).join('');
+    });
+  </script>
+
+</body>
+</html>
