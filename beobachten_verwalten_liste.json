@@ -1,9 +1,8 @@
-
 [
-    { "symbol": "AAPL", "name": "Apple", "besitz": true },
-    { "symbol": "MSFT", "name": "Microsoft", "besitz": true },
-    { "symbol": "XIACF", "name": "Xiaomi", "besitz": false },
-    { "symbol": "BKNG", "name": "Booking Holdings", "besitz": false },
-    { "symbol": "MSTR", "name": "MicroStrategy", "besitz": false },
-    { "symbol": "NVDA", "name": "Nvidia", "besitz": false }
-  ]  
+    { "symbol": "AAPL:NASDAQ", "name": "Apple", "besitz": true },
+    { "symbol": "MSFT:NASDAQ", "name": "Microsoft", "besitz": true },
+    { "symbol": "BKNG:NASDAQ", "name": "Booking Holdings", "besitz": false },
+    { "symbol": "MSTR:NASDAQ", "name": "MicroStrategy", "besitz": false },
+    { "symbol": "NVDA:NASDAQ", "name": "Nvidia", "besitz": false }
+  ]
+  
