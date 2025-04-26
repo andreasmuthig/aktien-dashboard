@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Aktien Scanner</title>
+  <script src="https://unpkg.com/feather-icons"></script>
+  <style>
+    body { background: #121212; color: #e0e0e0; font-family: Arial, sans-serif; padding: 20px; }
+    button { margin: 5px; padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; }
+    button.active { background: #2e7d32; color: white; }
+    .tile { margin: 10px; padding: 10px; border: 1px solid #444; }
+  </style>
+</head>
+<body>
+
+  <h2>Filter:</h2>
+  <button data-filter="all" class="active">Alle</button>
+  <button data-filter="besitz">Besitz</button>
+  <button data-filter="beobachtung">Beobachtung</button>
+
+  <h2>Cache-Zeit:</h2>
+  <button data-cache="1">1 Min</button>
+  <button data-cache="10" class="active">10 Min</button>
+  <button data-cache="20">20 Min</button>
+
+  <h2>Daten:</h2>
+  <button id="loadButton">Daten abrufen</button>
+  <div id="lastUpdate"></div>
+  <div id="scannerContent"></div>
+
+  <script>
+    const API_KEY = '20cdd52ee2094c8988a6a466bb41b247';
+  </script>
+
+  <script>
+  // inline scanner.js für Test
+  feather.replace();
+
+  let filter = 'all';
+  let cacheTimeMinutes = 10;
+  const localStorageKey = 'aktien_scanner_data';
+  const jsonURL = 'https://raw.githubusercontent.com/andreasmuthig/aktien-dashboard/main/beobachten_verwalten_liste.json';
+  let daten = [];
+
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM ready – init Test');
+
+    // Buttons binden
+    document.querySelectorAll('[data-filter]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        filter = btn.dataset.filter;
+        document.querySelectorAll('[data-filter]').forEach(b => b.classList.toggle('active', b === btn));
+        render();
+        console.log('Filter gesetzt auf', filter);
+      });
+    });
+    document.querySelectorAll('[data-cache]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        cacheTimeMinutes = parseInt(btn.dataset.cache,10);
+        document.querySelectorAll('[data-cache]').forEach(b => b.classList.toggle('active', b === btn));
+        console.log('Cache-Zeit gesetzt auf', cacheTimeMinutes);
+      });
+    });
+    document.getElementById('loadButton').addEventListener('click', ladeDaten);
+
+    // erster Cache-Check
+    const cache = JSON.parse(localStorage.getItem(localStorageKey))||{};
+    if (cache.data) {
+      daten = cache.data;
+      render();
+      document.getElementById('lastUpdate').textContent = 
+        `Letzte (Cache): ${new Date(cache.timestamp).toLocaleTimeString()}`;
+    }
+
+    // sofort Laden
+    ladeDaten();
+  });
+
+  async function ladeDaten() {
+    console.log('ladeDaten() gestartet');
+    const cache = JSON.parse(localStorage.getItem(localStorageKey))||{};
+    const jetzt = Date.now();
+    const alt = cache.timestamp ? (jetzt - cache.timestamp)/60000 : Infinity;
+    if (cache.data && alt < cacheTimeMinutes) {
+      console.log('Nutze Cache, alt:', alt.toFixed(1));
+      daten = cache.data;
+      render();
+      document.getElementById('lastUpdate').textContent = 
+        `Letzte (Cache): ${new Date(cache.timestamp).toLocaleTimeString()}`;
+      return;
+    }
+    try {
+      const r = await fetch(jsonURL);
+      if (!r.ok) throw new Error('Liste HTTP ' + r.status);
+      const list = await r.json();
+      daten = await Promise.all(list.map(async a => {
+        try {
+          const u = `https://api.twelvedata.com/quote?symbol=${a.symbol}&apikey=${API_KEY}`;
+          const rr = await fetch(u);
+          const j = await rr.json();
+          if (j.status==='error'||!j.price) return { ...a, kurs:null, veraenderung:null };
+          return { ...a, kurs:parseFloat(j.price), veraenderung:parseFloat(j.percent_change) };
+        } catch {
+          return { ...a, kurs:null, veraenderung:null };
+        }
+      }));
+      localStorage.setItem(localStorageKey, JSON.stringify({ timestamp:jetzt, data:daten }));
+      console.log('API-Daten geholt und gespeichert');
+      render();
+      document.getElementById('lastUpdate').textContent = `Letzte: ${new Date(jetzt).toLocaleTimeString()}`;
+    } catch(e) {
+      console.error('Fehler Laden:', e);
+      document.getElementById('scannerContent').textContent = 'Fehler beim Laden';
+    }
+  }
+
+  function render() {
+    const c = document.getElementById('scannerContent');
+    if (!daten.length) return c.textContent='Keine Daten.';
+    c.innerHTML = daten.filter(d => filter==='all'||(filter==='besitz'&&d.besitz)||(filter==='beobachtung'&&!d.besitz))
+      .map(d => `<div class="tile">
+        <strong>${d.name}</strong><br>
+        ${d.kurs!==null?d.kurs.toFixed(2)+' USD':'❗ nicht verfügbar'}
+      </div>`).join('');
+  }
+  </script>
+
+</body>
+</html>
