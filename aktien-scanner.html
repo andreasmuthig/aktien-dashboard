@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aktien Monitor</title>
+    <title>Aktien Scanner</title>
     <style>
         body {
             background-color: #121212;
@@ -105,24 +105,27 @@
                     const tile = document.createElement("div");
                     tile.className = "asset-tile";
 
-                    const kurs = parseFloat(asset.kurs);
-                    const veraenderung = parseFloat(asset.veränderung);
+                    let kurs = asset.price !== "N/A" ? parseFloat(asset.price) : null;
+                    let veraenderung = asset.change_percent !== "N/A" ? parseFloat(asset.change_percent) : null;
+                    let name = asset.name !== "N/A" ? asset.name : "Unbekannt";
 
                     let recommendation = "Beobachten";
                     let tileColor = "yellow";
-                    if (veraenderung >= 2) {
+
+                    if (veraenderung !== null && veraenderung >= 2) {
                         recommendation = "Kaufen";
                         tileColor = "green";
-                    } else if (veraenderung <= -2) {
+                    } else if (veraenderung !== null && veraenderung <= -2) {
                         recommendation = "Verkaufen";
                         tileColor = "red";
                     }
 
                     tile.classList.add(tileColor);
+
                     tile.innerHTML = `
-                        <h2>${asset.name}</h2>
-                        <div>Kurs: ${kurs.toFixed(2)} €</div>
-                        <div>Veränderung: ${veraenderung.toFixed(2)} %</div>
+                        <h2>${name}</h2>
+                        <div>Kurs: ${kurs !== null ? kurs.toFixed(2) + ' €' : "Nicht verfügbar"}</div>
+                        <div>Veränderung: ${veraenderung !== null ? veraenderung.toFixed(2) + ' %' : "Nicht verfügbar"}</div>
                         <div class="recommendation">${recommendation}</div>
                     `;
 
